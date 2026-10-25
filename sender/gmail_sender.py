@@ -88,7 +88,7 @@ def _build_service(credential):
         credential.needs_reauth = False
         credential.save()
 
-    return build('gmail', 'v1', credentials=creds)
+    return build('gmail', 'v1', credentials=creds, cache_discovery=False)
 
 
 # ── MIME message builder ──────────────────────────────────────────────────────
