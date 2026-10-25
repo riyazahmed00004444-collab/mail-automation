@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unsubscribe — BidAlert</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon { font-size: 48px; margin-bottom: 20px; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    p { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+    .email { color: #818ef8; font-weight: 500; display: block; margin-bottom: 24px; word-break: break-all; }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      text-decoration: none;
+      box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+      transition: all 0.2s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
+    .note { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📧</div>
+    <h1>Unsubscribe</h1>
+    <p>You're requesting to unsubscribe:</p>
+    <span class="email">{{ email }}</span>
+    <p>You will no longer receive marketing emails from BidAlert.in. This action is immediate and cannot be undone from this page.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">
+        Yes, Unsubscribe Me
+      </button>
+    </form>
+
+    <p class="note">Changed your mind? Reply to any BidAlert email to re-subscribe.</p>
+  </div>
+</body>
+</html>

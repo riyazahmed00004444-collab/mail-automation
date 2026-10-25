@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Scheduler & Automation Hub — BidAlert{% endblock %}
+{% block page_title %}Delivery Scheduler{% endblock %}
+
+{% block topbar_actions %}
+<div class="flex items-center gap-2">
+  <button type="button" onclick="startLiveDispatch('', 'General Queue', 20)" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer">
+    <span class="w-2 h-2 rounded-full bg-white pulse-dot"></span>
+    🚀 Live Dispatch (Watch Sending)
+  </button>
+  <form method="post" action="{% url 'scheduler_process_now' %}">
+    {% csrf_token %}
+    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-1.5 border border-white/10">
+      <svg class="w-3.5 h-3.5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      Process Queue
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- Top Hero / Master Control Banner -->
+  <div class="card rounded-2xl p-6 bg-gradient-to-r from-brand-900/40 via-indigo-900/30 to-purple-900/20 border border-brand-500/30 flex items-center justify-between flex-wrap gap-4">
+    <div class="space-y-1">
+      <div class="flex items-center gap-2.5">
+        <h2 class="text-lg font-bold text-white">Scheduler & Delivery Engine</h2>
+        {% if setting.paused %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          PAUSED
+        </span>
+        {% else %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+          ACTIVE &amp; DISPATCHING
+        </span>
+        {% endif %}
+      </div>
+      <p class="text-xs text-white/60">
+        Controls delivery time windows, daily volume limits, anti-spam spacing, and executes scheduled campaigns automatically.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Master Pause/Resume Toggle -->
+      <form method="post" action="{% url 'toggle_scheduler_pause' %}">
+        {% csrf_token %}
+        {% if setting.paused %}
+        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Resume Delivery Engine
+        </button>
+        {% else %}
+        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600/80 hover:bg-amber-600 text-white flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Pause Delivery Engine
+        </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <!-- Low Leads Daily Alert Banner -->
+  {% if low_leads_info.is_low %}
+  <div class="card rounded-2xl p-4 border border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in">
+    <div class="flex items-center gap-3">
+      <span class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-xl font-bold flex-shrink-0 border border-amber-500/30">
+        ⚠️
+      </span>
+      <div>
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          Leads Running Low Alert
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+            {{ low_leads_info.remaining_total }} Total Leads Left
+          </span>
+        </h3>
+        <p class="text-xs text-white/60 mt-0.5">
+          Targeted Pool: <strong>{{ targeted_new }}</strong> · Direct Draft Pool: <strong>{{ direct_new }}</strong>.
+          At your sending cap of <strong>{{ daily_cap }}/day</strong>, leads will finish in approx <strong>{{ low_leads_info.days_left }} day(s)</strong>.
+          Daily alert email is active.
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-shrink-0 w-full md:w-auto">
+      <a href="/leads/upload/" class="w-full md:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center justify-center gap-1.5 shadow transition-all">
+        ⚡ Upload &amp; Sort Real Leads →
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Metric Badges Row -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- Daily Quota Gauge -->
+    <div class="card rounded-xl p-4 space-y-2">
+      <div class="flex items-center justify-between text-xs text-white/50">
+        <span>Today's Quota (IST)</span>
+        <span class="font-mono font-bold text-white">{{ sent_today }} / {{ daily_cap }}</span>
+      </div>
+      <div class="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+        <div class="bg-gradient-to-r from-brand-500 to-indigo-500 h-2 rounded-full transition-all" style="width: {{ cap_pct }}%;"></div>
+      </div>
+      <div class="flex items-center justify-between text-[11px]">
+        <span class="text-white/40">{{ remaining_today }} capacity remaining</span>
+        <span class="text-brand-300 font-bold">{{ cap_pct }}% used</span>
+      </div>
+    </div>
+
+    <!-- Send Window Status -->
+    <div class="card rounded-xl p-4 space-y-2">
+      <div class="flex items-center justify-between text-xs text-white/50">
+        <span>Send Window Status</span>
+        <span class="text-[10px] text-white/40">IST (UTC+5:30)</span>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if window_ok %}
+        <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+        <span class="text-xs font-bold text-green-400">Window Open</span>
+        {% else %}
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+        <span class="text-xs font-bold text-amber-300">Window Closed</span>
+        {% endif %}
+      </div>
+      <p class="text-[11px] text-white/60 truncate" title="{{ setting.window_start|time:'H:i' }}–{{ setting.window_end|time:'H:i' }} IST">
+        {% if window_ok %}
+        {{ setting.window_start|time:"g:i A" }} to {{ setting.window_end|time:"g:i A" }} IST
+        {% else %}
+        {{ window_reason }}
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Lead Pools Depth & Available -->
+    <div class="card rounded-xl p-4 space-y-2">
+      <div class="flex items-center justify-between text-xs text-white/50">
+        <span>Ready Lead Pools</span>
+        <a href="/leads/" class="text-[11px] text-brand-400 hover:underline">Manage Leads →</a>
+      </div>
+      <div class="flex items-baseline gap-2">
+        <span class="text-2xl font-black text-white font-mono">{{ total_new_leads }}</span>
+        <span class="text-xs text-emerald-400 font-semibold">Uncontacted</span>
+      </div>
+      <div class="flex items-center justify-between text-[11px] text-white/50 pt-1 border-t border-white/5">
+        <span class="text-blue-300">🎯 Targeted: <strong>{{ targeted_new }}</strong></span>
+        <span class="text-purple-300">⚡ Direct: <strong>{{ direct_new }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Worker Heartbeat / Status -->
+    <div class="card rounded-xl p-4 space-y-2">
+      <div class="flex items-center justify-between text-xs text-white/50">
+        <span>Background Worker</span>
+        <span class="text-[10px] text-white/40">{{ heartbeat_ago_str }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if is_worker_alive %}
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot"></span>
+        <span class="text-xs font-bold text-emerald-400">Online &amp; Responsive</span>
+        {% else %}
+        <span class="w-2.5 h-2.5 rounded-full bg-white/30"></span>
+        <span class="text-xs font-semibold text-white/60">Standby / Cron-Driven</span>
+        {% endif %}
+      </div>
+      <p class="text-[11px] text-white/40 truncate">
+        {% if gmail_cred %}
+        Sender: {{ gmail_cred.email }}
+        {% else %}
+        <span class="text-red-400">No Gmail account linked</span>
+        {% endif %}
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Main Grid: Settings (Left 5 cols) vs Scheduled Queue (Right 7 cols) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT: Schedule Rules Form (5 cols) -->
+    <div class="lg:col-span-5 space-y-5">
+      <div class="card rounded-xl p-5 space-y-5 border border-white/10">
+        <div class="border-b border-white/10 pb-3 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-white/90">⚙️ Schedule &amp; Sending Rules</h3>
+            <p class="text-[11px] text-white/50">Applies globally across all scheduled &amp; direct campaigns.</p>
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'update_scheduler_settings' %}" class="space-y-4">
+          {% csrf_token %}
+
+          <!-- Section A: Send Window Hours -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold uppercase tracking-wider text-brand-300">1. Daily Sending Window (IST)</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Window Starts At</label>
+                <input type="time" name="window_start" value="{{ setting.window_start|time:'H:i' }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Window Ends At</label>
+                <input type="time" name="window_end" value="{{ setting.window_end|time:'H:i' }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+            </div>
+            <p class="text-[10px] text-white/40">Emails are only dispatched during this timeframe to maintain recipient engagement and respect business hours.</p>
+          </div>
+
+          <!-- Section B: Sending Weekdays -->
+          <div class="space-y-2 pt-2 border-t border-white/10">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold uppercase tracking-wider text-brand-300">2. Active Sending Days</label>
+              <div class="flex gap-1 text-[10px]">
+                <button type="button" onclick="setWeekdays([0,1,2,3,4])" class="text-white/50 hover:text-white px-1">Mon–Fri</button>
+                <span class="text-white/20">|</span>
+                <button type="button" onclick="setWeekdays([0,1,2,3,4,5])" class="text-white/50 hover:text-white px-1">Mon–Sat</button>
+                <span class="text-white/20">|</span>
+                <button type="button" onclick="setWeekdays([0,1,2,3,4,5,6])" class="text-white/50 hover:text-white px-1">All</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-7 gap-1.5 pt-1">
+              {% for day in days_data %}
+              <label class="flex flex-col items-center justify-center p-2 rounded-lg border border-white/10 hover:border-brand-500/50 cursor-pointer bg-white/5 text-center transition-colors">
+                <input type="checkbox" name="weekdays" value="{{ day.id }}" {% if day.checked %}checked{% endif %}
+                  class="day-checkbox rounded text-brand-500 mb-1">
+                <span class="text-[10px] font-bold text-white/80">{{ day.name }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Section C: Volume Caps -->
+          <div class="space-y-2 pt-2 border-t border-white/10">
+            <label class="block text-xs font-bold uppercase tracking-wider text-brand-300">3. Daily &amp; Hourly Caps</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Daily Cap (Emails/Day) *</label>
+                <input type="number" name="daily_cap" min="1" max="2000" value="{{ setting.daily_cap }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Hourly Cap (Optional)</label>
+                <input type="number" name="per_hour_cap" min="1" max="500" value="{{ setting.per_hour_cap|default_if_none:'' }}" placeholder="Auto"
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+            </div>
+            <p class="text-[10px] text-white/40">Standard Gmail personal cap is 500/day; Google Workspace is 2,000/day.</p>
+          </div>
+
+          <!-- Section D: Pacing & Jitter Delay -->
+          <div class="space-y-2 pt-2 border-t border-white/10">
+            <label class="block text-xs font-bold uppercase tracking-wider text-brand-300">4. Humanized Pacing Delay (Seconds)</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Min Delay (s)</label>
+                <input type="number" name="min_delay_seconds" min="1" max="300" value="{{ setting.min_delay_seconds }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Max Delay (s)</label>
+                <input type="number" name="max_delay_seconds" min="1" max="600" value="{{ setting.max_delay_seconds }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+            </div>
+            <p class="text-[10px] text-white/40">Engine picks a random jitter delay between min and max seconds between sends to mimic human behavior.</p>
+          </div>
+
+          <!-- Section E: Safety & Guardrails -->
+          <div class="space-y-2 pt-2 border-t border-white/10">
+            <label class="block text-xs font-bold uppercase tracking-wider text-brand-300">5. Safety Guardrails</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Lead Cooldown (Days)</label>
+                <input type="number" name="min_days_between_emails" min="0" max="90" value="{{ setting.min_days_between_emails }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Bounce Auto-Pause (%)</label>
+                <input type="number" step="0.1" name="bounce_pause_percent" min="1.0" max="25.0" value="{{ setting.bounce_pause_percent }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+            </div>
+            <p class="text-[10px] text-white/40">Prevents emailing the same lead within cooldown window, and halts sending if hard bounces exceed threshold.</p>
+          </div>
+
+          <!-- Section F: Low Lead Depletion Alerts -->
+          <div class="space-y-2 pt-2 border-t border-white/10">
+            <label class="block text-xs font-bold uppercase tracking-wider text-amber-300">6. Low Leads Daily Alerts</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Alert Threshold (Leads)</label>
+                <input type="number" name="low_lead_threshold" min="5" max="2000" value="{{ setting.low_lead_threshold|default:50 }}" required
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] text-white/60 mb-1">Alert Email (Optional)</label>
+                <input type="email" name="alert_recipient_email" value="{{ setting.alert_recipient_email }}" placeholder="Defaults to linked Gmail"
+                  class="w-full px-3 py-2 rounded-lg text-xs border font-mono">
+              </div>
+            </div>
+            <p class="text-[10px] text-white/40">Sends an automated alert email once per day whenever remaining leads fall below this threshold.</p>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full btn-primary py-2.5 rounded-xl text-xs font-bold text-white shadow-lg shadow-brand-500/20 cursor-pointer">
+              💾 Save Scheduler &amp; Alert Settings
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: Live Scheduled Queue & Actions (7 cols) -->
+    <div class="lg:col-span-7 space-y-5">
+      <div class="card rounded-xl p-5 space-y-4 border border-white/10">
+        <div class="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
+          <div>
+            <h3 class="text-sm font-semibold text-white/90">📋 Active &amp; Scheduled Campaign Queue</h3>
+            <p class="text-[11px] text-white/50">Campaigns waiting for their start time or actively dispatching.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/compose/" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-1.5 border border-white/10">
+              <span>✨</span> Schedule in AI Compose
+            </a>
+            <a href="/compose/direct/" class="btn-primary text-xs px-3 py-1.5 rounded-lg text-white font-medium flex items-center gap-1.5 shadow-sm">
+              <span>+</span> Schedule in Direct Compose
+            </a>
+          </div>
+        </div>
+
+        {% if scheduled_campaigns %}
+        <div class="space-y-3">
+          {% for camp in scheduled_campaigns %}
+          <div class="p-4 rounded-xl border border-white/10 bg-white/2 hover:border-brand-500/30 transition-all space-y-3">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <div class="flex items-center gap-2">
+                  <a href="{% url 'campaign_detail' pk=camp.pk %}" class="text-sm font-bold text-white hover:text-brand-300 transition-colors">
+                    {{ camp.name }}
+                  </a>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider
+                    {% if camp.status == 'sending' %}badge-sending
+                    {% elif camp.status == 'scheduled' %}badge-approved
+                    {% elif camp.status == 'paused' %}badge-paused{% endif %}">
+                    {{ camp.get_status_display }}
+                  </span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/60">
+                    {{ camp.get_target_category_display }}
+                  </span>
+                </div>
+                <p class="text-xs text-white/50 mt-1 truncate max-w-md">
+                  Subject: {{ camp.subject }}
+                </p>
+              </div>
+
+              <!-- Scheduled Time Badge -->
+              <div class="text-right">
+                <span class="text-[11px] text-white/40 block">Scheduled Start:</span>
+                {% if camp.start_at_local %}
+                <span class="text-xs font-mono font-bold {% if camp.is_due %}text-emerald-400{% else %}text-brand-300{% endif %}">
+                  {{ camp.start_at_local|date:"d M Y, h:i A" }} IST
+                </span>
+                {% if camp.is_due %}
+                <span class="block text-[10px] text-emerald-400 font-medium">✓ Due now (Ready)</span>
+                {% endif %}
+                {% else %}
+                <span class="text-xs font-mono text-white/60">Immediate</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-[11px] text-white/50 font-mono">
+                <span>Sent: <strong class="text-white">{{ camp.sent_count }}</strong> / {{ camp.planned_total }}</span>
+                <span>Queued: <strong class="text-yellow-400">{{ camp.queued_count }}</strong></span>
+                <span>Progress: <strong class="text-brand-300">{{ camp.progress_pct }}%</strong></span>
+              </div>
+              <div class="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-brand-500 h-1.5 rounded-full" style="width: {{ camp.progress_pct }}%;"></div>
+              </div>
+            </div>
+
+            <!-- Action Controls per Campaign -->
+            <div class="flex items-center justify-between pt-2 border-t border-white/5 flex-wrap gap-2 text-xs">
+              <div class="flex items-center gap-2">
+                <!-- Run Now (Live Interactive Dispatch with Animation) -->
+                <button type="button" onclick="startLiveDispatch('{{ camp.pk }}', '{{ camp.name|escapejs }}', 20)" class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-brand-500/30 hover:bg-brand-500/60 text-brand-200 border border-brand-500/40 flex items-center gap-1 transition-colors cursor-pointer shadow-sm">
+                  ⚡ Send Now (Live)
+                </button>
+
+                <!-- Pause / Resume -->
+                <form method="post" action="{% url 'toggle_campaign_pause' pk=camp.pk %}">
+                  {% csrf_token %}
+                  {% if camp.status == 'paused' %}
+                  <button type="submit" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600/50 flex items-center gap-1 transition-colors">
+                    ▶ Resume
+                  </button>
+                  {% else %}
+                  <button type="submit" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-600/30 text-amber-300 hover:bg-amber-600/50 flex items-center gap-1 transition-colors">
+                    ⏸ Pause
+                  </button>
+                  {% endif %}
+                </form>
+              </div>
+
+              <!-- Quick Reschedule Trigger -->
+              <details class="relative">
+                <summary class="cursor-pointer text-[11px] text-brand-300 hover:text-brand-200 list-none flex items-center gap-1 font-medium">
+                  📅 Reschedule Time ▾
+                </summary>
+                <div class="absolute right-0 bottom-full mb-2 w-72 p-3 rounded-xl bg-slate-900 border border-white/20 shadow-2xl z-20 space-y-2">
+                  <p class="text-[11px] font-bold text-white">Pick New Date &amp; Time (IST):</p>
+                  <form method="post" action="{% url 'reschedule_campaign' pk=camp.pk %}">
+                    {% csrf_token %}
+                    <input type="datetime-local" name="schedule_datetime" required
+                      value="{{ camp.start_at_local|date:'Y-m-d\TH:i' }}"
+                      class="w-full px-2.5 py-1.5 rounded-lg text-xs border mb-2 font-mono">
+                    <button type="submit" class="w-full btn-primary py-1.5 rounded-lg text-xs font-bold text-white">
+                      Confirm New Schedule
+                    </button>
+                  </form>
+                </div>
+              </details>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12 border-2 border-dashed border-white/10 rounded-xl space-y-3">
+          <div class="text-3xl text-white/30">📅</div>
+          <h4 class="text-sm font-semibold text-white/80">No Scheduled Campaigns in Pipeline</h4>
+          <p class="text-xs text-white/40 max-w-sm mx-auto">
+            You do not have any campaigns scheduled. Use AI Compose or Direct Compose to draft your message and set a future send date.
+          </p>
+          <div class="flex items-center justify-center gap-2 pt-1">
+            <a href="/compose/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10">
+              ✨ Open AI Compose
+            </a>
+            <a href="/compose/direct/" class="btn-primary text-xs px-3.5 py-1.5 rounded-lg text-white font-bold inline-block shadow">
+              + Open Direct Compose
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Automation / PythonAnywhere Worker Card -->
+      <div class="card rounded-xl p-5 space-y-3 bg-white/2 border border-white/10">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-white/80 flex items-center gap-1.5">
+            <span>🤖</span> Background Worker Command
+          </h4>
+          <span class="text-[10px] text-brand-300">PythonAnywhere &amp; Cron</span>
+        </div>
+        <p class="text-xs text-white/50 leading-relaxed">
+          To run the scheduler in the background automatically, add an <strong>Always-On Task</strong> (runs continuously every 60s) or an <strong>Hourly Task</strong> in PythonAnywhere:
+        </p>
+        <div class="bg-black/50 p-3 rounded-lg border border-white/10 flex items-center justify-between gap-3">
+          <code class="text-xs text-emerald-400 font-mono select-all overflow-x-auto">
+            python manage.py run_sender --loop --interval 60
+          </code>
+          <button type="button" onclick="navigator.clipboard.writeText('python manage.py run_sender --loop --interval 60'); alert('Copied command!');"
+            class="text-[10px] px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors flex-shrink-0">
+            Copy
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% include "includes/live_dispatch_modal.html" %}
+
+<script>
+  function setWeekdays(days) {
+    const boxes = document.querySelectorAll('.day-checkbox');
+    boxes.forEach(b => {
+      b.checked = days.includes(parseInt(b.value));
+    });
+  }
+</script>
+{% endblock %}

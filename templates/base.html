@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}BidAlert Comms Hub{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}BidAlert internal email automation platform{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "sans-serif"] },
+          colors: {
+            brand: {
+              50:"#f0f4ff",100:"#e0eaff",200:"#c7d7fe",300:"#a5b8fc",
+              400:"#818ef8",500:"#6366f1",600:"#4f46e5",700:"#4338ca",800:"#3730a3",900:"#312e81"
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: "Inter", sans-serif; }
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+    .gradient-bg { background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+    .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+    .stat-card { background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(79,70,229,0.05) 100%); border: 1px solid rgba(99,102,241,0.2); }
+    .nav-link { transition: all 0.2s ease; }
+    .nav-link:hover { background: rgba(99,102,241,0.15); color: #818ef8; }
+    .nav-link.active { background: rgba(99,102,241,0.2); color: #818ef8; border-left: 3px solid #6366f1; }
+    .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(99,102,241,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+    .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .badge-sent { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .badge-queued { background: rgba(250,204,21,0.15); color: #fbbf24; border: 1px solid rgba(250,204,21,0.3); }
+    .badge-failed { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-draft { background: rgba(156,163,175,0.15); color: #9ca3af; border: 1px solid rgba(156,163,175,0.3); }
+    .badge-approved { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .badge-paused { background: rgba(251,146,60,0.15); color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
+    .badge-pending_approval { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .badge-sending { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-done { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .pulse-dot { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .slide-in { animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    textarea, input, select { background: rgba(255,255,255,0.05) !important; border-color: rgba(255,255,255,0.1) !important; color: white !important; }
+    textarea::placeholder, input::placeholder { color: rgba(255,255,255,0.3) !important; }
+    textarea:focus, input:focus, select:focus { border-color: rgba(99,102,241,0.5) !important; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    select option { background: #1e1b4b; color: white; }
+    .score-ring { transition: stroke-dashoffset 1s ease; }
+    .table-row { transition: background 0.15s ease; }
+    .table-row:hover { background: rgba(99,102,241,0.05); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 3px; }
+  </style>
+  {# CSRF token value available to all JS via getCsrfToken() #}
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  {% block extra_head %}{% endblock %}
+  <script>
+    /**
+     * Returns the current CSRF token from the meta tag (always fresh on page load).
+     * Use in ALL fetch() POST calls: headers: { 'X-CSRFToken': getCsrfToken() }
+     * Falls back to reading the csrftoken cookie if meta tag is absent.
+     */
+    function getCsrfToken() {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      if (meta && meta.content) return meta.content;
+      // Cookie fallback
+      const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : '';
+    }
+  </script>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+
+{% if user.is_authenticated %}
+<div class="flex min-h-screen">
+  <aside class="w-64 flex-shrink-0 glass border-r border-white/10 flex flex-col" style="min-height:100vh;">
+    <div class="p-6 border-b border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg btn-primary flex items-center justify-center text-lg font-bold">B</div>
+        <div>
+          <div class="font-bold text-white text-sm">BidAlert</div>
+          <div class="text-xs text-white/40">Comms Hub</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-1">
+      <a href="/" class="nav-link {% if request.path == "/" %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+        Dashboard
+      </a>
+      <a href="/compose/direct/" class="nav-link {% if "/compose" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Compose
+      </a>
+      <a href="/scheduler/" class="nav-link {% if "/scheduler" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Scheduler
+      </a>
+      <a href="/campaigns/" class="nav-link {% if "/campaigns" in request.path and "tracking" not in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+        Campaigns
+      </a>
+      <a href="/campaigns/tracking/" class="nav-link {% if "tracking" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Tracking
+      </a>
+      <a href="/leads/" class="nav-link {% if "/leads" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Leads
+      </a>
+      <a href="/logs/" class="nav-link {% if "/logs" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Send Logs
+      </a>
+      <a href="/knowledge/" class="nav-link {% if "/knowledge" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        Knowledge Base
+      </a>
+      {% if user.is_staff %}
+      <a href="/settings/" class="nav-link {% if "/settings" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+      </a>
+      <a href="/accounts/setup/" class="nav-link {% if "/setup" in request.path %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+        Setup Wizard
+      </a>
+      {% endif %}
+    </nav>
+
+    <div class="p-4 border-t border-white/10">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold">
+          {{ user.username|first|upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-medium text-white truncate">{{ user.username }}</div>
+          <div class="text-xs text-white/40">{% if user.is_staff %}Staff{% else %}Member{% endif %}</div>
+        </div>
+      </div>
+      <form method="post" action="/accounts/logout/" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-white/40 hover:text-white/70 transition-colors bg-transparent border-0 p-0 cursor-pointer">Sign out</button>
+      </form>
+
+    </div>
+  </aside>
+
+  <main class="flex-1 overflow-auto">
+    <div class="sticky top-0 z-10 glass border-b border-white/10 px-6 py-3 flex items-center justify-between">
+      <h1 class="text-sm font-semibold text-white/90">{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="flex items-center gap-4">
+        {% block topbar_actions %}{% endblock %}
+        <a href="/compose/" class="btn-primary text-xs font-medium px-4 py-2 rounded-lg text-white">+ New Campaign</a>
+      </div>
+    </div>
+
+    {% if messages %}
+    <div class="px-6 pt-4">
+      {% for message in messages %}
+      <div class="slide-in mb-2 px-4 py-3 rounded-lg text-sm flex items-center gap-2
+        {% if message.tags == "error" %}bg-red-500/10 border border-red-500/30 text-red-300
+        {% elif message.tags == "success" %}bg-green-500/10 border border-green-500/30 text-green-300
+        {% elif message.tags == "warning" %}bg-yellow-500/10 border border-yellow-500/30 text-yellow-300
+        {% else %}bg-blue-500/10 border border-blue-500/30 text-blue-300{% endif %}">
+        <span>{{ message }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="p-6">{% block content %}{% endblock %}</div>
+  </main>
+</div>
+
+{% else %}
+<div class="min-h-screen flex items-center justify-center">
+  {% block auth_content %}{% endblock %}
+</div>
+{% endif %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

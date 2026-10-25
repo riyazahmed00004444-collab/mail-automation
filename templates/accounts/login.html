@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Sign In — BidAlert Comms Hub{% endblock %}
+
+{% block auth_content %}
+<div class="w-full max-w-md">
+  <div class="card p-8 glass">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl btn-primary mb-4 text-2xl font-black">B</div>
+      <h1 class="text-2xl font-bold text-white">BidAlert</h1>
+      <p class="text-white/40 text-sm mt-1">Comms Hub — Team Access</p>
+    </div>
+
+    <!-- Form -->
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+
+      {% if error %}
+      <div class="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <div>
+        <label class="block text-xs font-medium text-white/60 mb-1.5">Username</label>
+        <input type="text" name="username" id="id_username" autocomplete="username" required
+          class="w-full px-4 py-2.5 rounded-lg text-sm border"
+          placeholder="your username">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-white/60 mb-1.5">Password</label>
+        <input type="password" name="password" id="id_password" autocomplete="current-password" required
+          class="w-full px-4 py-2.5 rounded-lg text-sm border"
+          placeholder="••••••••">
+      </div>
+
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <button type="submit" class="w-full btn-primary py-2.5 rounded-lg text-sm font-semibold text-white mt-2">
+        Sign In →
+      </button>
+    </form>
+
+    <p class="text-center text-xs text-white/30 mt-6">
+      BidAlert internal tool — staff only
+    </p>
+  </div>
+</div>
+{% endblock %}

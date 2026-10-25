@@ -1,0 +1,13 @@
+line-length = 120
+target-version = "py311"
+exclude = [
+    ".git",
+    "__pycache__",
+    "*/migrations/*",
+    "staticfiles",
+    "logs",
+]
+
+[lint]
+select = ["E", "F", "W"]
+ignore = ["E501", "F403", "F405"]

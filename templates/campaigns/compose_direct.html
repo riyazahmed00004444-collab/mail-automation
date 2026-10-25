@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Compose Campaign — BidAlert{% endblock %}
+{% block page_title %}Compose Campaign{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- Top Navigation Mode Switcher -->
+  <div class="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-3">
+    <div class="flex items-center gap-2">
+      <a href="/compose/direct/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow-sm flex items-center gap-2">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Direct Draft & Email Dumper
+      </a>
+      <a href="/compose/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+        <span>✨</span>
+        AI Compose Wizard
+      </a>
+    </div>
+
+    <div class="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+      Direct Gmail Dispatch Active
+    </div>
+  </div>
+
+  <form id="directComposeForm" method="post" action="/compose/direct/" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT: Draft Content & Editor (7 cols) -->
+      <div class="lg:col-span-7 space-y-5">
+
+        <!-- Template Selector Banner -->
+        <div class="card rounded-xl p-4 bg-gradient-to-r from-brand-900/40 to-indigo-900/20 border border-brand-500/30">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p class="text-xs font-bold text-brand-300 uppercase tracking-wide">Quick Draft Templates</p>
+              <p class="text-xs text-white/60">Load a ready-made proposal draft or start from scratch.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="btnLoadGemTemplate" class="btn-primary text-xs px-3 py-1.5 rounded-lg font-medium text-white flex items-center gap-1.5">
+                <span>🏢</span> Load GeM Buyers Template
+              </button>
+              <button type="button" id="btnClearTemplate" class="px-3 py-1.5 rounded-lg text-xs border border-white/20 text-white/70 hover:text-white">
+                Clear Blank
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campaign Metadata -->
+        <div class="card rounded-xl p-5 space-y-4">
+          <h3 class="text-sm font-semibold text-white/90">1. Campaign Details</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-white/60 mb-1">Campaign Name *</label>
+              <input type="text" name="name" id="campaignName" required
+                value="GeM & Non-GeM Procurement Support - Buyers Batch"
+                class="w-full px-3 py-2 rounded-lg text-sm border focus:ring-1 focus:ring-brand-500">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-white/60 mb-1">Target Category *</label>
+                <select name="category" id="categorySelect" class="w-full px-3 py-2 rounded-lg text-sm border">
+                  {% for val, label in target_category_choices %}
+                  <option value="{{ val }}" {% if val == 'buyers' %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <p class="text-[11px] text-brand-300/80 mt-1">Default set to <strong>Buyers</strong> for procurement outreach.</p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-white/60 mb-1">Sending Lane</label>
+                <select name="lane" class="w-full px-3 py-2 rounded-lg text-sm border">
+                  {% for val, label in lane_choices %}
+                  <option value="{{ val }}" {% if val == 'bulk' %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email Message Editor (Plain Text Only) -->
+        <div class="card rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h3 class="text-sm font-semibold text-white/90">2. Message Draft (Plain Text)</h3>
+              <p class="text-[11px] text-white/50">Edit your proposal in plain text. Clean email formatting and deliverability compliance are handled automatically.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="btnSaveDraftHeader" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition-colors shadow-sm">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                <span>Save Changes</span>
+              </button>
+              <button type="button" id="btnTogglePreview" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 hover:bg-white/10 text-white/80 flex items-center gap-1.5 transition-colors">
+                <span>👁️</span> <span id="togglePreviewText">Live Preview</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hidden Campaign ID (populated when saving draft) -->
+          <input type="hidden" name="campaign_id" id="campaignIdInput" value="">
+
+          <!-- Subject -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-medium text-white/60">Subject Line *</label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-white/40">Insert:</span>
+                <button type="button" onclick="insertMergeTag('idSubject', '{{lead_name}}')" class="text-[10px] bg-white/5 hover:bg-white/10 px-1.5 py-0.5 rounded text-white/60 border border-white/10">Name</button>
+                <button type="button" onclick="insertMergeTag('idSubject', '{{company}}')" class="text-[10px] bg-white/5 hover:bg-white/10 px-1.5 py-0.5 rounded text-white/60 border border-white/10">Company</button>
+              </div>
+            </div>
+            <input type="text" name="subject" id="idSubject" required
+              value="{{ default_subject }}"
+              class="w-full px-3 py-2 rounded-lg text-sm border font-medium">
+          </div>
+
+          <!-- Plain Text Editor (The ONLY editor) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-medium text-white/60">Plain Text Email Body *</label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-white/40">Insert:</span>
+                <button type="button" onclick="insertMergeTag('idBodyText', '{{lead_name}}')" class="text-[10px] bg-white/5 hover:bg-white/10 px-1.5 py-0.5 rounded text-white/60 border border-white/10">Name</button>
+                <button type="button" onclick="insertMergeTag('idBodyText', '{{company}}')" class="text-[10px] bg-white/5 hover:bg-white/10 px-1.5 py-0.5 rounded text-white/60 border border-white/10">Company</button>
+                <button type="button" onclick="insertMergeTag('idBodyText', '{{unsub_url}}')" class="text-[10px] bg-white/5 hover:bg-white/10 px-1.5 py-0.5 rounded text-white/60 border border-white/10">Unsub Link</button>
+              </div>
+            </div>
+            <textarea name="body_text" id="idBodyText" rows="18" required
+              class="w-full px-3.5 py-2.5 rounded-lg text-xs font-mono border leading-relaxed bg-black/40 text-white/90 focus:ring-1 focus:ring-brand-500">{{ default_body_text }}</textarea>
+
+            <!-- Save Action Bar below Textarea -->
+            <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-white/10 flex-wrap gap-2">
+              <div class="flex items-center gap-3">
+                <button type="button" id="btnSaveDraftBottom" class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition-colors shadow">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                  <span>Save Changes</span>
+                </button>
+                <span id="saveStatusBadge" class="text-xs text-emerald-400 font-semibold opacity-0 transition-opacity duration-300 flex items-center gap-1">
+                  <span>✓</span> <span id="saveStatusText">Draft changes saved</span>
+                </span>
+              </div>
+              <div class="text-[11px] text-white/40 font-mono" id="draftWordCount">
+                0 words
+              </div>
+            </div>
+          </div>
+
+          <!-- Collapsible Live Inbox Preview (Hidden by default) -->
+          <div id="panePreview" class="hidden space-y-2 border-t border-white/10 pt-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-brand-300">Formatted Email Inbox Preview</label>
+              <button type="button" id="btnClosePreview" class="text-[11px] text-white/50 hover:text-white">✕ Close Preview</button>
+            </div>
+            <div id="previewContainer" class="p-5 rounded-lg bg-white text-gray-900 min-h-[220px] text-sm overflow-auto max-h-[420px] shadow-inner font-sans"></div>
+          </div>
+
+          <!-- Unsubscribe Notice -->
+          <div class="p-3 rounded-lg bg-white/5 border border-white/10 flex items-start gap-2.5 text-xs text-white/60">
+            <span class="text-brand-400 mt-0.5">ℹ️</span>
+            <div>
+              Deliverability Guardrail: An unsubscribe footer link <code>&#123;&#123;unsub_url&#125;&#125;</code> is appended automatically to ensure full CAN-SPAM / IT Act compliance and maintain high Gmail inbox delivery.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Recipient Dumper & Scheduling (5 cols) -->
+      <div class="lg:col-span-5 space-y-5">
+
+        <!-- Recipient Dumper -->
+        <div class="card rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white/90">3. Target Recipients</h3>
+            <span class="text-xs text-brand-300 font-mono" id="liveCountBadge">0 detected</span>
+          </div>
+
+          <!-- Dumper Mode Tabs -->
+          <div class="flex border-b border-white/10 text-xs">
+            <button type="button" id="tabPasteEmails" class="px-3 py-2 font-semibold border-b-2 border-brand-500 text-white">
+              📋 Paste Emails
+            </button>
+            <button type="button" id="tabUploadCsv" class="px-3 py-2 font-semibold text-white/50 hover:text-white">
+              📁 Upload CSV / File
+            </button>
+          </div>
+
+          <!-- Paste Textarea -->
+          <div id="areaPaste">
+            <label class="block text-xs text-white/50 mb-1.5">Paste email addresses (one per line, comma or space separated):</label>
+            <textarea name="raw_emails" id="idRawEmails" rows="8"
+              placeholder="buyer1@gem.gov.in&#10;purchase.officer@iitb.ac.in&#10;Director <procurement@dept.gov.in>&#10;..."
+              class="w-full px-3 py-2 rounded-lg text-xs font-mono border placeholder:text-white/20"></textarea>
+          </div>
+
+          <!-- Upload CSV -->
+          <div id="areaUpload" class="hidden space-y-3">
+            <label class="block text-xs text-white/50 mb-1.5">Choose a CSV or Text file containing emails:</label>
+            <div class="border-2 border-dashed border-white/20 hover:border-brand-500/50 rounded-xl p-6 text-center transition-colors">
+              <input type="file" name="csv_file" id="idCsvFile" accept=".csv,.txt" class="hidden">
+              <label for="idCsvFile" class="cursor-pointer block">
+                <div class="text-3xl mb-2">📄</div>
+                <p class="text-xs font-semibold text-white mb-1" id="fileNameLabel">Click to select CSV file</p>
+                <p class="text-[11px] text-white/40">Accepts .csv with 'email', 'name', 'company' columns or raw text lists</p>
+              </label>
+            </div>
+          </div>
+
+          <!-- Live Analysis Box -->
+          <div class="p-3.5 rounded-lg bg-black/30 border border-white/10 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-white/60">Unique Valid Emails:</span>
+              <span class="font-bold text-white font-mono" id="statTotal">0</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-white/60">Suppressed / Bounced (Skipped):</span>
+              <span class="font-semibold text-yellow-400 font-mono" id="statSuppressed">0</span>
+            </div>
+            <div class="border-t border-white/10 pt-1.5 flex items-center justify-between text-xs">
+              <span class="font-bold text-brand-300">Ready to Send:</span>
+              <span class="font-black text-green-400 text-sm font-mono" id="statEligible">0</span>
+            </div>
+          </div>
+
+          <button type="button" id="btnPreviewRecipients" class="w-full py-1.5 rounded-lg text-xs font-medium border border-white/20 hover:bg-white/5 text-white/80 transition-colors">
+            🔍 Check & Validate Recipient List
+          </button>
+        </div>
+
+        <!-- Scheduling & Dispatch -->
+        <div class="card rounded-xl p-5 space-y-4">
+          <h3 class="text-sm font-semibold text-white/90">4. Dispatch & Automation</h3>
+
+          <div class="space-y-3">
+            <!-- Option 1: Send Now -->
+            <label class="flex items-start gap-3 p-3 rounded-lg border border-white/10 hover:border-brand-500/30 cursor-pointer bg-white/2">
+              <input type="radio" name="send_action" value="send_now" checked class="mt-1 text-brand-500">
+              <div>
+                <p class="text-xs font-bold text-white">⚡ Queue & Dispatch Now</p>
+                <p class="text-[11px] text-white/50 mt-0.5">Campaign is approved and queued immediately. The background worker or 'Process Queue' sends emails according to your daily cap.</p>
+              </div>
+            </label>
+
+            <!-- Option 2: Schedule -->
+            <label class="flex items-start gap-3 p-3 rounded-lg border border-white/10 hover:border-brand-500/30 cursor-pointer bg-white/2">
+              <input type="radio" name="send_action" value="schedule" id="radioSchedule" class="mt-1 text-brand-500">
+              <div class="flex-1">
+                <p class="text-xs font-bold text-white">📅 Schedule for Date & Time</p>
+                <p class="text-[11px] text-white/50 mt-0.5 mb-2">Hold the campaign until a specific future date and time.</p>
+                <div id="scheduleTimeWrapper" class="hidden mt-2 space-y-2">
+                  <input type="datetime-local" name="schedule_datetime" id="idScheduleTime"
+                    class="w-full px-3 py-1.5 rounded-lg text-xs border font-mono">
+                  <div class="p-2.5 rounded-lg bg-black/40 border border-white/10 text-[11px] text-white/60 space-y-1">
+                    <div class="flex items-center justify-between text-brand-300 font-semibold">
+                      <span>🕒 Governed by Scheduler Hub</span>
+                      <a href="/scheduler/" target="_blank" class="text-brand-400 hover:underline">Scheduler Hub →</a>
+                    </div>
+                    <p class="text-[10px] text-white/50">
+                      Dispatched during your configured delivery window (IST) and daily quota. Once scheduled, you can monitor or reschedule it in the <a href="/scheduler/" class="underline text-white/70">Scheduler</a>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </label>
+
+            <!-- Option 3: Draft -->
+            <label class="flex items-start gap-3 p-3 rounded-lg border border-white/10 hover:border-brand-500/30 cursor-pointer bg-white/2">
+              <input type="radio" name="send_action" value="draft" class="mt-1 text-brand-500">
+              <div>
+                <p class="text-xs font-bold text-white">💾 Save as Inactive Draft</p>
+                <p class="text-[11px] text-white/50 mt-0.5">Saves campaign and recipient list without activating delivery.</p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Test Send Module -->
+          <div class="border-t border-white/10 pt-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-medium text-white/60">Send a Live Test to Yourself</label>
+              <span id="testStatusMsg" class="text-[11px]"></span>
+            </div>
+            <div class="flex gap-2">
+              <input type="email" id="testEmailTarget" value="{{ request.user.email }}" placeholder="your-email@example.com"
+                class="flex-1 px-3 py-1.5 rounded-lg text-xs border">
+              <button type="button" id="btnSendTest" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors">
+                Send Test
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-2">
+            <button type="submit" id="btnSubmitCampaign" class="w-full btn-primary py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-brand-500/20">
+              🚀 Launch & Queue Campaign
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </form>
+
+</div>
+
+<script>
+  // Safe default string literals passed from Django
+  const defSubject = {{ default_subject_json|safe }};
+  const defBodyText = {{ default_body_text_json|safe }};
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const subjectInput = document.getElementById('idSubject');
+    const bodyTextInput = document.getElementById('idBodyText');
+    const campaignNameInput = document.getElementById('campaignName');
+    const categorySelect = document.getElementById('categorySelect');
+    const campaignIdInput = document.getElementById('campaignIdInput');
+    const wordCountEl = document.getElementById('draftWordCount');
+    const saveBadge = document.getElementById('saveStatusBadge');
+    const saveBadgeText = document.getElementById('saveStatusText');
+    const previewPane = document.getElementById('panePreview');
+    const previewContainer = document.getElementById('previewContainer');
+    const togglePreviewBtn = document.getElementById('btnTogglePreview');
+    const closePreviewBtn = document.getElementById('btnClosePreview');
+
+    // ── Word & Character Counter ──────────────────────────────────────────
+    function updateCounts() {
+      const text = bodyTextInput ? bodyTextInput.value.trim() : '';
+      const words = text ? text.split(/\s+/).length : 0;
+      const chars = text ? text.length : 0;
+      if (wordCountEl) {
+        wordCountEl.textContent = `${words} words · ${chars.toLocaleString()} chars`;
+      }
+    }
+
+    // ── Client-side HTML Preview from Plain Text ──────────────────────────
+    function renderClientPreview() {
+      if (!previewContainer || !bodyTextInput) return;
+      const raw = bodyTextInput.value.trim();
+      if (!raw) {
+        previewContainer.innerHTML = '<p class="text-gray-400 italic">No content to preview.</p>';
+        return;
+      }
+
+      // Escape basic HTML
+      let safe = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      // Bold **markdown**
+      safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      // Auto-link URLs
+      safe = safe.replace(/(https?:\/\/[^\s<>]+)/g, '<a href="$1" style="color:#2563eb;text-decoration:underline;" target="_blank">$1</a>');
+
+      // Paragraphs & line breaks
+      const paras = safe.split(/\n{2,}/);
+      const htmlParas = paras.map(p => {
+        const withBr = p.replace(/\n/g, '<br>');
+        return `<p style="margin: 0 0 14px 0; font-size: 14px; line-height: 1.6; color: #1e293b;">${withBr}</p>`;
+      });
+
+      let finalHtml = htmlParas.join('');
+      if (!finalHtml.includes('{{unsub_url}}')) {
+        finalHtml += `
+          <hr style="margin-top: 24px; border: 0; border-top: 1px solid #e2e8f0;">
+          <p style="font-size: 11px; color: #64748b; margin-top: 8px;">
+            If you wish to unsubscribe, <a href="#" style="color: #64748b; text-decoration: underline;">click here</a>.
+          </p>`;
+      }
+      previewContainer.innerHTML = finalHtml;
+    }
+
+    // ── Preview Toggle ────────────────────────────────────────────────────
+    if (togglePreviewBtn && previewPane) {
+      togglePreviewBtn.addEventListener('click', () => {
+        const isHidden = previewPane.classList.contains('hidden');
+        if (isHidden) {
+          renderClientPreview();
+          previewPane.classList.remove('hidden');
+          document.getElementById('togglePreviewText').textContent = 'Hide Preview';
+          previewPane.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          previewPane.classList.add('hidden');
+          document.getElementById('togglePreviewText').textContent = 'Live Preview';
+        }
+      });
+    }
+
+    if (closePreviewBtn && previewPane) {
+      closePreviewBtn.addEventListener('click', () => {
+        previewPane.classList.add('hidden');
+        if (togglePreviewBtn) {
+          document.getElementById('togglePreviewText').textContent = 'Live Preview';
+        }
+      });
+    }
+
+    // ── Save Draft Function (LocalStorage + Database AJAX) ────────────────
+    let saveTimeout = null;
+    async function saveDraft(showNotice = true) {
+      const subject = subjectInput ? subjectInput.value.trim() : '';
+      const bodyText = bodyTextInput ? bodyTextInput.value : '';
+      const name = campaignNameInput ? campaignNameInput.value.trim() : '';
+      const category = categorySelect ? categorySelect.value : 'buyers';
+      const campaignId = campaignIdInput ? campaignIdInput.value : '';
+
+      // 1. Cache to browser localStorage instantly
+      try {
+        localStorage.setItem('compose_direct_subject', subject);
+        localStorage.setItem('compose_direct_body_text', bodyText);
+        localStorage.setItem('compose_direct_name', name);
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
+      }
+
+      // 2. Persist to DB via AJAX if subject is present
+      if (subject) {
+        try {
+          const resp = await fetch('/compose/direct/save-draft/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+              campaign_id: campaignId,
+              name: name,
+              category: category,
+              subject: subject,
+              body_text: bodyText
+            })
+          });
+          const data = await resp.json();
+          if (resp.ok && data.campaign_id) {
+            if (campaignIdInput) campaignIdInput.value = data.campaign_id;
+            if (showNotice && saveBadge) {
+              saveBadgeText.textContent = `Draft saved (${data.saved_at})`;
+              saveBadge.classList.remove('opacity-0');
+              if (saveTimeout) clearTimeout(saveTimeout);
+              saveTimeout = setTimeout(() => {
+                saveBadge.classList.add('opacity-0');
+              }, 4000);
+            }
+            return;
+          }
+        } catch (e) {
+          console.warn('Server draft save error:', e);
+        }
+      }
+
+      // Local storage saved indicator fallback
+      if (showNotice && saveBadge) {
+        saveBadgeText.textContent = `Changes cached locally (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'} )})`;
+        saveBadge.classList.remove('opacity-0');
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          saveBadge.classList.add('opacity-0');
+        }, 3500);
+      }
+    }
+
+    // Bind explicit Save buttons
+    const btnSaveHeader = document.getElementById('btnSaveDraftHeader');
+    if (btnSaveHeader) btnSaveHeader.addEventListener('click', () => saveDraft(true));
+
+    const btnSaveBottom = document.getElementById('btnSaveDraftBottom');
+    if (btnSaveBottom) btnSaveBottom.addEventListener('click', () => saveDraft(true));
+
+    // Input change listeners
+    if (bodyTextInput) {
+      bodyTextInput.addEventListener('input', () => {
+        updateCounts();
+        if (previewPane && !previewPane.classList.contains('hidden')) {
+          renderClientPreview();
+        }
+      });
+      // Auto cache on blur
+      bodyTextInput.addEventListener('blur', () => saveDraft(false));
+    }
+
+    if (subjectInput) {
+      subjectInput.addEventListener('blur', () => saveDraft(false));
+    }
+
+    // ── Template Switchers ────────────────────────────────────────────────
+    const btnLoadGem = document.getElementById('btnLoadGemTemplate');
+    if (btnLoadGem) {
+      btnLoadGem.addEventListener('click', () => {
+        if (campaignNameInput) campaignNameInput.value = "GeM & Non-GeM Procurement Support - Buyers Batch";
+        if (categorySelect) categorySelect.value = "buyers";
+        if (subjectInput) subjectInput.value = defSubject;
+        if (bodyTextInput) bodyTextInput.value = defBodyText;
+        updateCounts();
+        if (previewPane && !previewPane.classList.contains('hidden')) {
+          renderClientPreview();
+        }
+        saveDraft(true);
+      });
+    }
+
+    const btnClear = document.getElementById('btnClearTemplate');
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (confirm('Clear the draft message?')) {
+          if (subjectInput) subjectInput.value = "";
+          if (bodyTextInput) bodyTextInput.value = "Respected Sir/Madam,\n\nYour message here...\n\nYours faithfully,\nTeam";
+          updateCounts();
+          if (previewPane && !previewPane.classList.contains('hidden')) {
+            renderClientPreview();
+          }
+          saveDraft(false);
+        }
+      });
+    }
+
+    // ── Dumper Tabs (Paste vs Upload) ─────────────────────────────────────
+    const tabPaste = document.getElementById('tabPasteEmails');
+    const tabUpload = document.getElementById('tabUploadCsv');
+    const areaPaste = document.getElementById('areaPaste');
+    const areaUpload = document.getElementById('areaUpload');
+
+    if (tabPaste && tabUpload) {
+      tabPaste.addEventListener('click', () => {
+        tabPaste.className = "px-3 py-2 font-semibold border-b-2 border-brand-500 text-white";
+        tabUpload.className = "px-3 py-2 font-semibold text-white/50 hover:text-white";
+        if (areaPaste) areaPaste.classList.remove('hidden');
+        if (areaUpload) areaUpload.classList.add('hidden');
+      });
+
+      tabUpload.addEventListener('click', () => {
+        tabUpload.className = "px-3 py-2 font-semibold border-b-2 border-brand-500 text-white";
+        tabPaste.className = "px-3 py-2 font-semibold text-white/50 hover:text-white";
+        if (areaUpload) areaUpload.classList.remove('hidden');
+        if (areaPaste) areaPaste.classList.add('hidden');
+      });
+    }
+
+    // ── File upload label ─────────────────────────────────────────────────
+    const fileInput = document.getElementById('idCsvFile');
+    if (fileInput) {
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+          document.getElementById('fileNameLabel').textContent = fileInput.files[0].name;
+          validateRecipients();
+        }
+      });
+    }
+
+    // ── Real-time Recipient Validation ────────────────────────────────────
+    async function validateRecipients() {
+      const formData = new FormData();
+      const rawEmails = document.getElementById('idRawEmails') ? document.getElementById('idRawEmails').value : '';
+      if (rawEmails) formData.append('raw_emails', rawEmails);
+      if (fileInput && fileInput.files.length > 0) formData.append('csv_file', fileInput.files[0]);
+
+      try {
+        const resp = await fetch('/compose/direct/preview-recipients/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCsrfToken() },
+          body: formData
+        });
+        const data = await resp.json();
+        document.getElementById('statTotal').textContent = data.total;
+        document.getElementById('statSuppressed').textContent = data.suppressed_count;
+        document.getElementById('statEligible').textContent = data.eligible;
+        document.getElementById('liveCountBadge').textContent = `${data.eligible} ready`;
+      } catch (e) {
+        console.warn('Recipient preview error:', e);
+      }
+    }
+
+    const rawEmailsInput = document.getElementById('idRawEmails');
+    if (rawEmailsInput) rawEmailsInput.addEventListener('blur', validateRecipients);
+
+    const btnPreview = document.getElementById('btnPreviewRecipients');
+    if (btnPreview) btnPreview.addEventListener('click', validateRecipients);
+
+    // ── Scheduling Radios ─────────────────────────────────────────────────
+    const scheduleRadios = document.querySelectorAll('input[name="send_action"]');
+    const scheduleWrapper = document.getElementById('scheduleTimeWrapper');
+    const submitBtn = document.getElementById('btnSubmitCampaign');
+
+    scheduleRadios.forEach(radio => {
+      radio.addEventListener('change', () => {
+        const isSchedule = document.getElementById('radioSchedule').checked;
+        if (isSchedule) {
+          scheduleWrapper.classList.remove('hidden');
+          submitBtn.textContent = "📅 Schedule Campaign";
+        } else if (radio.value === 'draft') {
+          scheduleWrapper.classList.add('hidden');
+          submitBtn.textContent = "💾 Save as Draft";
+        } else {
+          scheduleWrapper.classList.add('hidden');
+          submitBtn.textContent = "🚀 Launch & Queue Campaign";
+        }
+      });
+    });
+
+    // ── Test Send API ─────────────────────────────────────────────────────
+    const btnSendTest = document.getElementById('btnSendTest');
+    if (btnSendTest) {
+      btnSendTest.addEventListener('click', async () => {
+        const msg = document.getElementById('testStatusMsg');
+        const toEmail = document.getElementById('testEmailTarget').value.trim();
+        const subject = subjectInput ? subjectInput.value.trim() : '';
+        const bodyText = bodyTextInput ? bodyTextInput.value : '';
+
+        if (!toEmail) {
+          alert('Please enter a recipient email for the test send.');
+          return;
+        }
+        if (!subject) {
+          alert('Please enter a subject line.');
+          return;
+        }
+
+        btnSendTest.disabled = true;
+        btnSendTest.textContent = "Sending…";
+        msg.textContent = "";
+
+        try {
+          const resp = await fetch('/compose/direct/test-send/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+              to_email: toEmail,
+              subject: subject,
+              body_text: bodyText
+            })
+          });
+          const data = await resp.json();
+          if (resp.ok) {
+            msg.className = "text-[11px] text-green-400 font-medium";
+            msg.textContent = "✅ Test sent! Check inbox.";
+          } else {
+            msg.className = "text-[11px] text-red-400 font-medium";
+            msg.textContent = "❌ " + (data.error || 'Failed to send');
+          }
+        } catch (e) {
+          msg.className = "text-[11px] text-red-400 font-medium";
+          msg.textContent = "❌ Network error";
+        } finally {
+          btnSendTest.disabled = false;
+          btnSendTest.textContent = "Send Test";
+        }
+      });
+    }
+
+    // Initial counts calculation
+    updateCounts();
+  });
+
+  function insertMergeTag(inputId, tag) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const start = input.selectionStart || input.value.length;
+    const end = input.selectionEnd || input.value.length;
+    input.value = input.value.substring(0, start) + ' ' + tag + ' ' + input.value.substring(end);
+    input.focus();
+    input.dispatchEvent(new Event('input'));
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Leads — BidAlert{% endblock %}
+{% block page_title %}Leads{% endblock %}
+
+{% block topbar_actions %}
+<div class="flex items-center gap-2">
+  <button onclick="verifyQueuedLeadsUI()" id="verifyLeadsBtn"
+    class="text-xs px-3 py-1.5 rounded-lg border border-brand-500/30 bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 font-medium transition-colors flex items-center gap-1.5"
+    title="Validate email syntax and DNS MX records for queued leads before sending">
+    <svg id="verifyLeadsIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    Verify Queued (MX Pre-check)
+  </button>
+  <a href="/leads/upload/" class="text-xs px-3 py-1.5 rounded-lg border border-white/20 text-white/60 hover:text-white transition-colors">
+    + Upload CSV
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<!-- Lead Pools Overview (Targeted vs Direct Draft Dumper) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+  <div class="card rounded-xl p-4 border border-white/10">
+    <div class="flex items-center justify-between text-xs text-white/50">
+      <span>Total Leads in DB</span>
+      <span class="text-[10px] text-white/40">All pools</span>
+    </div>
+    <div class="text-2xl font-bold text-white mt-1">{{ total_count|default:total }}</div>
+    <div class="text-xs text-white/40 mt-1">Stored across all channels</div>
+  </div>
+
+  <div class="card rounded-xl p-4 border border-blue-500/30 bg-blue-950/20">
+    <div class="flex items-center justify-between text-xs text-blue-300">
+      <span class="font-semibold flex items-center gap-1.5"><span>🎯</span> Targeted Campaign Pool</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-200">{{ targeted_new }} Ready</span>
+    </div>
+    <div class="text-2xl font-bold text-white mt-1">{{ targeted_total }}</div>
+    <div class="text-xs text-white/40 mt-1">{{ targeted_new }} new uncontacted · {{ targeted_contacted }} contacted</div>
+  </div>
+
+  <div class="card rounded-xl p-4 border border-purple-500/30 bg-purple-950/20">
+    <div class="flex items-center justify-between text-xs text-purple-300">
+      <span class="font-semibold flex items-center gap-1.5"><span>⚡</span> Direct Draft Dumper Pool</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200">{{ direct_new }} Ready</span>
+    </div>
+    <div class="text-2xl font-bold text-white mt-1">{{ direct_total }}</div>
+    <div class="text-xs text-white/40 mt-1">{{ direct_new }} new uncontacted · {{ direct_contacted }} contacted</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card rounded-xl p-4 mb-5 flex flex-wrap gap-3 items-end">
+  <form method="get" class="flex flex-wrap gap-3 flex-1">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search email, name, company..."
+      class="flex-1 min-w-48 px-3 py-2 rounded-lg text-sm border">
+    
+    <select name="channel" class="px-3 py-2 rounded-lg text-sm border min-w-36">
+      <option value="">All Lead Pools</option>
+      {% for val, label in channel_choices %}
+      <option value="{{ val }}" {% if channel_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="status" class="px-3 py-2 rounded-lg text-sm border min-w-36">
+      <option value="">All Statuses</option>
+      {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="event" class="px-3 py-2 rounded-lg text-sm border min-w-36">
+      <option value="">All Sources</option>
+      {% for e in events %}
+      <option value="{{ e }}" {% if event_filter == e %}selected{% endif %}>{{ e }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer">Filter</button>
+    {% if q or status_filter or event_filter or channel_filter %}
+    <a href="/leads/" class="px-4 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 border border-white/10 transition-colors">Clear</a>
+    {% endif %}
+  </form>
+  <div class="text-xs text-white/40 font-mono">{{ total }} filtered lead(s)</div>
+</div>
+
+<!-- Table -->
+<div class="card rounded-xl overflow-hidden">
+  {% if page_obj.object_list %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-white/8 text-xs text-white/40 uppercase tracking-wide">
+          <th class="px-5 py-3 text-left">Email &amp; Channel</th>
+          <th class="px-4 py-3 text-left">Name / Company</th>
+          <th class="px-4 py-3 text-left">Category / Source</th>
+          <th class="px-4 py-3 text-left">Status</th>
+          <th class="px-4 py-3 text-left">Added</th>
+          <th class="px-4 py-3 text-left"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        {% for lead in page_obj %}
+        <tr class="table-row">
+          <td class="px-5 py-3">
+            <div class="text-white font-medium text-xs">{{ lead.email }}</div>
+            <div class="mt-0.5">
+              {% if lead.channel == 'direct_draft' %}
+              <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-semibold border border-purple-500/30">⚡ Direct Draft</span>
+              {% else %}
+              <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/30">🎯 Targeted</span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="px-4 py-3">
+            <div class="text-white/80 text-xs">{{ lead.name|default:"—" }}</div>
+            <div class="text-white/40 text-xs">{{ lead.company|default:"" }}</div>
+          </td>
+          <td class="px-4 py-3">
+            {% if lead.source %}
+            <div class="text-brand-400 text-xs">{{ lead.source }}</div>
+            {% if lead.event_date %}
+            <div class="text-white/30 text-xs">{{ lead.event_date|date:"M d, Y" }}</div>
+            {% endif %}
+            {% else %}
+            <span class="text-white/20 text-xs">—</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <span class="badge-{{ lead.status }} text-xs px-2 py-0.5 rounded-full">{{ lead.get_status_display }}</span>
+          </td>
+          <td class="px-4 py-3 text-xs text-white/30 whitespace-nowrap">
+            {{ lead.created_at|date:"M d, Y" }}
+          </td>
+          <td class="px-4 py-3">
+            <a href="/leads/{{ lead.pk }}/" class="text-xs text-brand-400 hover:text-brand-300">View →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-3 border-t border-white/8 flex items-center justify-between text-xs text-white/40">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div class="flex gap-2">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filter }}&event={{ event_filter }}"
+         class="px-3 py-1.5 rounded border border-white/10 hover:border-white/30 transition-colors">← Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filter }}&event={{ event_filter }}"
+         class="px-3 py-1.5 rounded border border-white/10 hover:border-white/30 transition-colors">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="py-16 text-center">
+    <div class="text-4xl mb-3">👥</div>
+    <p class="text-sm text-white/40">No leads found.</p>
+    <a href="/leads/upload/" class="inline-block mt-4 btn-primary text-xs font-medium px-4 py-2 rounded-lg text-white">Upload Leads</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function verifyQueuedLeadsUI() {
+  const btn = document.getElementById('verifyLeadsBtn');
+  const icon = document.getElementById('verifyLeadsIcon');
+  const origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Verifying DNS MX...`;
+
+  try {
+    const res = await fetch('/api/verify-leads', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
+      body: JSON.stringify({ batch_size: 100 })
+    });
+    const d = await res.json();
+    if (d.status === 'ok') {
+      let msg = `🛡️ Pre-send Verification Complete (Next ${d.total} Queued Leads):\n\n` +
+                `✅ Deliverable / Valid: ${d.valid}\n` +
+                `❌ Invalid / Dead Domains: ${d.invalid}\n`;
+      if (d.invalid > 0 && d.invalid_emails && d.invalid_emails.length) {
+        msg += `\nDead addresses automatically suppressed:\n` +
+               d.invalid_emails.slice(0, 5).map(e => `• ${e.email} (${e.reason})`).join('\n');
+        if (d.invalid_emails.length > 5) {
+          msg += `\n...and ${d.invalid_emails.length - 5} more.`;
+        }
+      }
+      alert(msg);
+      window.location.reload();
+    } else {
+      alert(`Verification error: ${d.error || 'Failed to verify leads'}`);
+    }
+  } catch (err) {
+    alert(`Network error during verification: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block title %}Upload & Sort Leads — BidAlert{% endblock %}
+{% block page_title %}Upload &amp; Sort Real Leads{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+  <!-- Sort Results Summary Banner (shown after upload) -->
+  {% if sort_results %}
+  <div class="card rounded-2xl p-6 border-2 border-emerald-500/40 bg-gradient-to-b from-emerald-950/40 via-slate-900 to-black space-y-5 animate-in fade-in duration-300">
+    <div class="flex items-center justify-between border-b border-white/10 pb-4">
+      <div class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/30">
+          ✓
+        </span>
+        <div>
+          <h2 class="text-base font-bold text-white">Lead Sorting &amp; Verification Complete!</h2>
+          <p class="text-xs text-white/50">Stored in database under: <strong class="text-emerald-300">{{ sort_results.channel_name }}</strong></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/scheduler/" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white transition-colors">
+          🚀 Open Scheduler →
+        </a>
+        <a href="/leads/" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors">
+          View Leads List
+        </a>
+      </div>
+    </div>
+
+    <!-- Sorter Metric Counters -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="stat-card rounded-xl p-4 text-center border-emerald-500/40 bg-emerald-500/10">
+        <div class="text-2xl font-black text-emerald-400 font-mono">{{ sort_results.real_imported }}</div>
+        <div class="text-xs text-emerald-300/80 font-semibold mt-1">Real Leads Stored</div>
+        <div class="text-[10px] text-white/40">Verified deliverable</div>
+      </div>
+      <div class="stat-card rounded-xl p-4 text-center border-red-500/30 bg-red-500/10">
+        <div class="text-2xl font-black text-red-400 font-mono">{{ sort_results.fake_dummy_filtered }}</div>
+        <div class="text-xs text-red-300/80 font-semibold mt-1">Fake / Dummy Filtered</div>
+        <div class="text-[10px] text-white/40">test@, placeholder, gibberish</div>
+      </div>
+      <div class="stat-card rounded-xl p-4 text-center border-amber-500/30 bg-amber-500/10">
+        <div class="text-2xl font-black text-amber-400 font-mono">{{ sort_results.disposable_filtered }}</div>
+        <div class="text-xs text-amber-300/80 font-semibold mt-1">Disposable Blocked</div>
+        <div class="text-[10px] text-white/40">tempmail, mailinator, etc.</div>
+      </div>
+      <div class="stat-card rounded-xl p-4 text-center border-white/10 bg-white/5">
+        <div class="text-2xl font-black text-white/70 font-mono">{{ sort_results.db_dupes_skipped|add:sort_results.suppressed_skipped|add:sort_results.in_file_dupes }}</div>
+        <div class="text-xs text-white/60 font-semibold mt-1">Dupes / Suppressed</div>
+        <div class="text-[10px] text-white/40">Already in DB or bounced</div>
+      </div>
+    </div>
+
+    <!-- Sample of Filtered Out Emails -->
+    {% if sort_results.discarded_sample %}
+    <div class="space-y-2 pt-2 border-t border-white/10">
+      <div class="flex items-center justify-between text-xs text-white/60 font-semibold">
+        <span>Filtered Out Addresses ({{ sort_results.discarded_total }} total rejected):</span>
+        <span class="text-[11px] text-white/40">Safely excluded from database</span>
+      </div>
+      <div class="max-h-36 overflow-y-auto rounded-lg bg-black/60 border border-white/10 p-2 font-mono text-xs space-y-1">
+        {% for d in sort_results.discarded_sample %}
+        <div class="flex items-center justify-between text-[11px] px-2 py-0.5 rounded hover:bg-white/5">
+          <span class="text-white/60 truncate max-w-xs">{{ d.email }}</span>
+          <span class="text-red-400/90 text-[10px]">{{ d.reason }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
+  <!-- Top Hero Info: Auto-Cleaner Active -->
+  <div class="card rounded-xl p-4 border border-brand-500/30 bg-gradient-to-r from-brand-950/40 via-slate-900 to-indigo-950/40 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🛡️</span>
+      <div>
+        <h3 class="text-xs font-bold text-white uppercase tracking-wider">Automatic Real Lead Sorter &amp; Cleaner Active</h3>
+        <p class="text-xs text-white/60">
+          Upload any CSV with mixed or unverified data. Fake emails, temporary burner inboxes, and typos are automatically separated so only genuine leads enter your schedule.
+        </p>
+      </div>
+    </div>
+    <a href="/scheduler/" class="hidden sm:flex items-center gap-1.5 text-xs text-brand-300 hover:text-white font-medium bg-brand-500/10 hover:bg-brand-500/20 px-3 py-1.5 rounded-lg border border-brand-500/30 transition-colors">
+      View Scheduler →
+    </a>
+  </div>
+
+  <!-- Main 2-Column Grid: Form (Left 7 cols) & Format Guide (Right 5 cols) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- LEFT COLUMN: Upload & Dumper Form (7 cols) -->
+    <div class="lg:col-span-7 space-y-5">
+      <form id="leadUploadForm" method="post" enctype="multipart/form-data" class="space-y-5" onsubmit="return handleLeadSubmit(event)">
+        {% csrf_token %}
+
+        <!-- Step 1: Destination Pool & Category -->
+        <div class="card rounded-xl p-5 space-y-4">
+          <div class="border-b border-white/10 pb-2 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-white/90">1. Destination Lead Pool &amp; Category</h3>
+            <span class="text-[10px] text-brand-300 font-mono">Separated in DB</span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Channel Pool -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-semibold text-white/70">Lead Database Record / Channel</label>
+              <select name="channel" class="w-full px-3 py-2.5 rounded-lg text-xs border bg-white/5 font-medium">
+                {% for val, label in channel_choices %}
+                <option value="{{ val }}" {% if selected_channel == val or not selected_channel and val == 'targeted' %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
+              </select>
+              <p class="text-[11px] text-white/40">Choose <strong>Targeted</strong> for regular lists or <strong>Direct Draft</strong> for plain text dumper.</p>
+            </div>
+
+            <!-- Lead Category -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-semibold text-white/70">Lead Category</label>
+              <select name="category" class="w-full px-3 py-2.5 rounded-lg text-xs border bg-white/5 font-medium">
+                {% for val, label in category_choices %}
+                <option value="{{ val }}" {% if selected_category == val or not selected_category and val == 'buyers' %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
+              </select>
+              <p class="text-[11px] text-white/40">Select <strong>Buyers</strong> for GeM &amp; Government procurement officers.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: File Upload Box -->
+        <div class="card rounded-xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-semibold text-white/90">2. Upload CSV File</label>
+            <span class="text-xs text-white/40">Auto-detects: <code class="text-brand-300">email</code>, <code class="text-brand-300">e-mail</code>, Google Contacts, or plain list</span>
+          </div>
+          <div class="border-2 border-dashed border-white/20 rounded-xl p-7 text-center hover:border-brand-500/50 transition-colors">
+            <svg class="w-8 h-8 text-white/20 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            <input type="file" name="csv_file" id="csv_file" accept=".csv,.txt" class="hidden" onchange="showFileName(this)">
+            <label for="csv_file" class="cursor-pointer text-xs font-bold text-brand-400 hover:text-brand-300">
+              Click here to choose your CSV file
+            </label>
+            <p class="text-xs text-white/30 mt-1">or drag &amp; drop your .csv file here</p>
+            <p id="fileName" class="text-xs text-emerald-400 font-semibold mt-2 hidden"></p>
+          </div>
+        </div>
+
+        <!-- Step 3: OR Paste Raw Text Dump -->
+        <div class="card rounded-xl p-5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <label class="text-sm font-semibold text-white/90">3. OR Paste CSV / Raw Email Dump</label>
+            <button type="button" onclick="insertSampleData()" class="text-[11px] text-brand-300 hover:text-brand-200 underline cursor-pointer">
+              Paste Sample Format
+            </button>
+          </div>
+          <p class="text-xs text-white/40">You can paste standard CSV lines or raw email lines. Non-real and disposable emails are filtered out automatically.</p>
+          <textarea name="csv_text" id="csv_text" rows="7"
+            placeholder="email,name,company&#10;officer1@gem.gov.in,Rajesh Sharma,Ministry of Commerce&#10;buyer@railnet.gov.in,Anita Verma,Northern Railway&#10;test@test.com (will be safely filtered)&#10;director@bhel.in,Suresh Kumar,BHEL Hyderabad"
+            class="w-full px-3 py-2 rounded-lg text-xs border font-mono resize-y"></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="submitBtn"
+          class="w-full btn-primary py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 cursor-pointer">
+          <span id="btnText">⚡ Sort &amp; Store Real Leads →</span>
+          <svg id="spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+        </button>
+        <p id="importNote" class="hidden text-center text-xs text-white/40 mt-2">
+          ⏳ Inspecting syntax, weeding out fake addresses, and sorting leads... Please wait.
+        </p>
+      </form>
+    </div>
+
+    <!-- RIGHT COLUMN: User Format Guide & Reference Note (5 cols) -->
+    <div class="lg:col-span-5 space-y-4">
+
+      <!-- The Main Format Guide Card -->
+      <div class="card rounded-2xl p-5 border border-brand-500/30 bg-gradient-to-b from-slate-900 via-indigo-950/20 to-black space-y-4">
+        
+        <div class="border-b border-white/10 pb-3">
+          <div class="flex items-center gap-2 text-brand-300 text-xs font-bold uppercase tracking-wider">
+            <span>📋</span> CSV Format Guide for New Users
+          </div>
+          <h4 class="text-sm font-bold text-white mt-1">How to Prepare Your Leads File</h4>
+          <p class="text-xs text-white/50 mt-0.5">Follow this simple layout so your emails personalize properly.</p>
+        </div>
+
+        <!-- Column Rules Checklist -->
+        <div class="space-y-2">
+          <div class="text-xs font-bold text-white/80">Accepted Column Headers:</div>
+          <div class="grid grid-cols-1 gap-1.5 text-xs">
+            <div class="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+              <span class="font-mono text-emerald-400 font-bold">email</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">REQUIRED</span>
+            </div>
+            <div class="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+              <span class="font-mono text-brand-300">name</span>
+              <span class="text-[10px] text-white/40">Optional (or first_name + last_name)</span>
+            </div>
+            <div class="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+              <span class="font-mono text-brand-300">company</span>
+              <span class="text-[10px] text-white/40">Optional (or organization)</span>
+            </div>
+            <div class="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+              <span class="font-mono text-brand-300">phone</span>
+              <span class="text-[10px] text-white/40">Optional (mobile number)</span>
+            </div>
+            <div class="p-2 rounded-lg bg-white/5 flex items-center justify-between">
+              <span class="font-mono text-brand-300">source</span>
+              <span class="text-[10px] text-white/40">Optional (portal / event / batch)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Format 1: Full Personalization Sample -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-white/80">Option A: Full Standard Format (Best)</span>
+            <button type="button" onclick="copySampleText('sampleFull')" class="text-[10px] text-brand-400 hover:text-white font-semibold">
+              Copy Sample
+            </button>
+          </div>
+          <div class="relative bg-black/60 rounded-xl p-3 border border-white/10 font-mono text-[11px] text-emerald-300 leading-relaxed overflow-x-auto select-all" id="sampleFull">email,name,company,phone
+officer@gem.gov.in,Rajesh Sharma,GeM Commerce,+919876543210
+buyer@railnet.gov.in,Anita Verma,Northern Railway,+919812345678
+director@aiims.edu,Dr. K. Patel,AIIMS New Delhi,+919922334455
+procurement@bhel.in,Suresh Kumar,BHEL Hyderabad,</div>
+        </div>
+
+        <!-- Format 2: Minimal Emails Only -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-white/80">Option B: Minimal Format (Emails Only)</span>
+            <button type="button" onclick="copySampleText('sampleMinimal')" class="text-[10px] text-brand-400 hover:text-white font-semibold">
+              Copy Sample
+            </button>
+          </div>
+          <div class="relative bg-black/60 rounded-xl p-3 border border-white/10 font-mono text-[11px] text-green-300 leading-relaxed overflow-x-auto select-all" id="sampleMinimal">email
+officer1@gem.gov.in
+buyer@railnet.gov.in
+procurement@bhel.in</div>
+        </div>
+
+        <!-- Crucial System Rules Note -->
+        <div class="p-3.5 rounded-xl bg-indigo-950/40 border border-brand-500/20 space-y-1.5 text-xs text-white/60">
+          <div class="font-bold text-brand-300 flex items-center gap-1.5">
+            <span>💡</span> Key Rules to Remember:
+          </div>
+          <ul class="space-y-1 text-[11px] list-disc list-inside">
+            <li><strong>In Excel:</strong> Save your workbook as <code class="text-white">CSV (Comma delimited) (*.csv)</code>.</li>
+            <li><strong>Auto-Cleaning:</strong> Addresses like <code class="text-red-300">test@test.com</code> or <code class="text-red-300">@mailinator.com</code> are rejected automatically.</li>
+            <li><strong>No Duplicates:</strong> Leads already in your database or previous bounces are skipped safely.</li>
+            <li><strong>Scheduler Connection:</strong> Once stored, the scheduler pulls from these leads according to your daily cap.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Card -->
+      <div class="card rounded-xl p-4 border border-white/10 bg-white/2 flex items-center justify-between">
+        <div class="text-xs">
+          <div class="font-semibold text-white">Have a raw text draft instead?</div>
+          <div class="text-white/40 text-[11px]">Paste message &amp; recipients together in Direct Compose.</div>
+        </div>
+        <a href="/compose/direct/" class="btn-primary px-3 py-1.5 rounded-lg text-xs font-bold text-white flex-shrink-0">
+          Open Direct Compose →
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let isSubmitting = false;
+
+function handleLeadSubmit(e) {
+  const fileInput = document.getElementById('csv_file');
+  const textInput = document.getElementById('csv_text');
+  
+  const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+  const hasText = textInput && textInput.value && textInput.value.trim().length > 0;
+  
+  if (!hasFile && !hasText) {
+    alert('Please choose a CSV file or paste lead data before submitting.');
+    if (e && e.preventDefault) e.preventDefault();
+    return false;
+  }
+
+  if (isSubmitting) {
+    if (e && e.preventDefault) e.preventDefault();
+    return false;
+  }
+  isSubmitting = true;
+
+  const btnText = document.getElementById('btnText');
+  const spinner = document.getElementById('spinner');
+  const importNote = document.getElementById('importNote');
+  const submitBtn = document.getElementById('submitBtn');
+
+  if (btnText) btnText.textContent = 'Sorting & Verifying Leads...';
+  if (spinner) spinner.classList.remove('hidden');
+  if (importNote) importNote.classList.remove('hidden');
+
+  // Defer disabling the button so browser dispatches multipart POST request without interruption
+  setTimeout(function() {
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.7';
+      submitBtn.style.cursor = 'not-allowed';
+    }
+  }, 50);
+
+  return true;
+}
+
+function showFileName(input) {
+  const label = document.getElementById('fileName');
+  if (input.files.length > 0) {
+    label.textContent = '✓ Selected: ' + input.files[0].name;
+    label.classList.remove('hidden');
+  }
+}
+
+function copySampleText(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const text = el.innerText || el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('✓ Copied sample CSV format to clipboard!');
+  }).catch(() => {
+    alert('Please copy the text manually from the box.');
+  });
+}
+
+function insertSampleData() {
+  const textarea = document.getElementById('csv_text');
+  if (!textarea) return;
+  const sample = "email,name,company\nofficer1@gem.gov.in,Rajesh Sharma,Ministry of Commerce\nbuyer@railnet.gov.in,Anita Verma,Northern Railway\ndirector@aiims.edu,Dr. K. Patel,AIIMS New Delhi\nprocurement@bhel.in,Suresh Kumar,BHEL Hyderabad";
+  textarea.value = sample;
+  textarea.focus();
+}
+
+const dropZone = document.querySelector('.border-dashed');
+if (dropZone) {
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-brand-500'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-brand-500'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('border-brand-500');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById('csv_file');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      showFileName(input);
+    }
+  });
+}
+</script>
+{% endblock %}

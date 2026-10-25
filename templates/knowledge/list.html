@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Base — BidAlert{% endblock %}
+{% block page_title %}Knowledge Base{% endblock %}
+
+{% block topbar_actions %}
+{% if user.is_staff %}
+<a href="/knowledge/new/" class="text-xs px-3 py-1.5 rounded-lg btn-primary text-white font-medium">+ Add Entry</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<p class="text-sm text-white/50 mb-5">These facts are the ONLY source AI uses for email drafts. Keep them accurate and current.</p>
+
+{% if entries %}
+<div class="space-y-3">
+  {% for entry in entries %}
+  <div class="card rounded-xl p-5 {% if not entry.is_active %}opacity-40{% endif %}">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-2">
+          <h3 class="text-sm font-semibold text-white">{{ entry.title }}</h3>
+          {% if not entry.is_active %}
+          <span class="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded">Disabled</span>
+          {% endif %}
+        </div>
+        <p class="text-xs text-white/50 whitespace-pre-line leading-relaxed line-clamp-4">{{ entry.content }}</p>
+        <div class="mt-2 text-xs text-white/25">Updated {{ entry.updated_at|date:"M d, Y H:i" }}</div>
+      </div>
+      {% if user.is_staff %}
+      <div class="flex gap-2 flex-shrink-0">
+        <a href="/knowledge/{{ entry.pk }}/edit/" 
+           class="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-colors">
+          Edit
+        </a>
+        <form method="post" action="/knowledge/{{ entry.pk }}/delete/" 
+              onsubmit="return confirm('Delete this entry? AI will no longer use this fact.')">
+          {% csrf_token %}
+          <button type="submit" 
+                  class="text-xs px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:border-red-500/50 hover:bg-red-500/10 transition-colors">
+            Delete
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card rounded-xl py-20 text-center">
+  <div class="text-5xl mb-4">📚</div>
+  <h3 class="text-sm font-medium text-white mb-1">No Knowledge Base entries</h3>
+  <p class="text-xs text-white/40 mb-5">AI cannot draft emails without facts. Add your services, plans, and pricing.</p>
+  {% if user.is_staff %}
+  <a href="/knowledge/new/" class="inline-block btn-primary text-sm font-medium px-5 py-2.5 rounded-lg text-white mr-3">Add Entry</a>
+  {% endif %}
+  <form method="post" action="/knowledge/seed/" class="inline">
+    {% csrf_token %}
+    <a href="#" onclick="alert('Run: python manage.py seed_knowledge')" 
+       class="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+      Run seed_knowledge command →
+    </a>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

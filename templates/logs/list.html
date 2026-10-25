@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Send Logs — BidAlert{% endblock %}
+{% block page_title %}Send Logs{% endblock %}
+
+{% block topbar_actions %}
+<button onclick="processQueue()" id="processBtn"
+  class="btn-primary px-4 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  <span id="processBtnText">Process Queue</span>
+</button>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- Filters -->
+<div class="card rounded-xl p-4 mb-5">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search email, campaign..."
+      class="flex-1 min-w-48 px-3 py-2 rounded-lg text-sm border">
+    <select name="status" class="px-3 py-2 rounded-lg text-sm border">
+      <option value="">All Statuses</option>
+      {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium text-white">Filter</button>
+    {% if q or status_filter %}
+    <a href="/logs/" class="px-4 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 border border-white/10 transition-colors">Clear</a>
+    {% endif %}
+    <span class="text-xs text-white/40 self-center">{{ total }} records</span>
+  </form>
+</div>
+
+<div class="card rounded-xl overflow-hidden">
+  {% if page_obj.object_list %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="border-b border-white/8 text-white/40 uppercase tracking-wide">
+          <th class="px-5 py-3 text-left">Status</th>
+          <th class="px-4 py-3 text-left">Recipient</th>
+          <th class="px-4 py-3 text-left">Campaign</th>
+          <th class="px-4 py-3 text-left">Error</th>
+          <th class="px-4 py-3 text-left">Sent At</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        {% for log in page_obj %}
+        <tr class="table-row">
+          <td class="px-5 py-3">
+            <span class="badge-{{ log.status }} px-2 py-0.5 rounded-full font-medium">{{ log.get_status_display }}</span>
+          </td>
+          <td class="px-4 py-3">
+            <a href="/leads/{{ log.lead.pk }}/" class="text-white hover:text-brand-300 transition-colors">
+              {{ log.lead.email }}
+            </a>
+            {% if log.lead.name %}
+            <div class="text-white/30 mt-0.5">{{ log.lead.name }}</div>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <a href="/campaigns/{{ log.campaign.pk }}/" class="text-brand-400 hover:text-brand-300 transition-colors">
+              {{ log.campaign.name|truncatechars:40 }}
+            </a>
+          </td>
+          <td class="px-4 py-3 text-red-300 max-w-xs">
+            {{ log.error|truncatechars:60|default:"" }}
+          </td>
+          <td class="px-4 py-3 text-white/30 whitespace-nowrap">
+            {% if log.sent_at %}{{ log.sent_at|date:"M d, Y H:i" }}{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="px-5 py-3 border-t border-white/8 flex items-center justify-between text-xs text-white/40">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div class="flex gap-2">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&status={{ status_filter }}"
+         class="px-3 py-1.5 rounded border border-white/10 hover:border-white/30 transition-colors">← Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ q }}&status={{ status_filter }}"
+         class="px-3 py-1.5 rounded border border-white/10 hover:border-white/30 transition-colors">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="py-16 text-center">
+    <div class="text-4xl mb-3">📋</div>
+    <p class="text-sm text-white/40">No logs found.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function processQueue() {
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('processBtnText');
+  btn.disabled = true;
+  btnText.textContent = 'Sending...';
+
+  try {
+    const resp = await fetch('/api/process-queue', {
+      method: 'POST',
+      headers: { 'X-Cron-Secret': '{{ cron_secret }}' }
+    });
+    const data = await resp.json();
+
+    if (data.error) {
+      showToast('❌ ' + data.error, 'red');
+    } else if (data.paused) {
+      showToast('⏸ Sending is paused. Go to Settings to resume.', 'orange');
+    } else if (data.cap_reached) {
+      showToast('📊 Daily cap reached. Try again tomorrow.', 'orange');
+    } else {
+      showToast(`✅ Sent: ${data.sent} | Failed: ${data.failed} | Remaining: ${data.remaining}`, 'green');
+      setTimeout(() => window.location.reload(), 1800);
+    }
+  } catch(e) {
+    showToast('❌ Network error: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Process Queue';
+  }
+}
+
+function showToast(msg, color) {
+  const colors = {
+    green: 'bg-green-500/20 border-green-500/30 text-green-300',
+    red: 'bg-red-500/20 border-red-500/30 text-red-300',
+    orange: 'bg-orange-500/20 border-orange-500/30 text-orange-300'
+  };
+  const toast = document.createElement('div');
+  toast.className = `fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl border text-sm font-medium shadow-xl transition-all ${colors[color]}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+</script>
+{% endblock %}

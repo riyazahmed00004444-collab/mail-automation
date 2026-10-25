@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Tracking — BidAlert{% endblock %}
+{% block page_title %}Campaign Tracking{% endblock %}
+
+{% block topbar_actions %}
+<button type="button" onclick="startLiveDispatch('', 'Active Campaign Queue', 20)"
+        class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer transition-all">
+  <span class="w-2 h-2 rounded-full bg-white pulse-dot"></span>
+  🚀 Live Dispatch (Watch Sending)
+</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Pipeline Overview -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+  <div class="stat-card rounded-xl p-5 text-center">
+    <div class="text-2xl font-bold text-white">{{ total_leads|default:"0" }}</div>
+    <div class="text-xs text-white/40 mt-1">Total Leads</div>
+  </div>
+  <div class="stat-card rounded-xl p-5 text-center">
+    <div class="text-2xl font-bold text-green-400">{{ contacted|default:"0" }}</div>
+    <div class="text-xs text-white/40 mt-1">Contacted</div>
+  </div>
+  <div class="stat-card rounded-xl p-5 text-center">
+    <div class="text-2xl font-bold text-brand-400">{{ new_leads|default:"0" }}</div>
+    <div class="text-xs text-white/40 mt-1">Remaining Clean</div>
+    <div class="text-[10px] text-white/40">🎯 {{ targeted_new }} · ⚡ {{ direct_new }}</div>
+  </div>
+  <div class="stat-card rounded-xl p-5 text-center">
+    <div class="text-2xl font-bold text-white/50">{{ suppressed_leads|default:"0" }}</div>
+    <div class="text-xs text-white/40 mt-1">Suppressed</div>
+  </div>
+  <div class="stat-card rounded-xl p-5 text-center">
+    <div class="text-2xl font-bold {% if days_left < 10 %}text-yellow-400{% else %}text-white{% endif %}">
+      {{ days_left }}
+    </div>
+    <div class="text-xs text-white/40 mt-1">Days Left</div>
+    <div class="text-xs text-white/20">at {{ daily_cap }}/day</div>
+  </div>
+</div>
+
+<!-- Overall Progress Bar -->
+<div class="card rounded-xl p-5 mb-6">
+  <div class="flex justify-between items-center mb-3">
+    <span class="text-sm font-semibold text-white/80">Overall Pipeline Progress</span>
+    <span class="text-sm font-bold text-brand-400">{{ progress_pct }}%</span>
+  </div>
+  <div class="h-3 bg-white/5 rounded-full overflow-hidden mb-2">
+    <div class="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400 transition-all"
+         style="width:{{ progress_pct }}%"></div>
+  </div>
+  <div class="flex justify-between text-xs text-white/30">
+    <span>0</span>
+    <span>{{ total_sent_ever }} sent ever</span>
+    <span>{{ total_leads }}</span>
+  </div>
+  {% if low_leads %}
+  <div class="mt-3 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center justify-between">
+    <span>⚠️ <strong>Low Leads Daily Alert:</strong> Only {{ new_leads }} uncontacted leads remaining (approx {{ days_left }} day{{ days_left|pluralize }} at {{ daily_cap }}/day).</span>
+    <a href="/leads/upload/" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold ml-2">Upload Real Leads →</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Today + 7-day History -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+  <!-- Today -->
+  <div class="card rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-white/80 mb-4">Today's Activity</h3>
+    <div class="flex gap-6">
+      <div class="text-center">
+        <div class="text-3xl font-bold text-brand-400">{{ sent_today }}</div>
+        <div class="text-xs text-white/40 mt-1">Sent Today</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-bold {% if bounced_today > 3 %}text-red-400{% else %}text-white/50{% endif %}">
+          {{ bounced_today }}
+        </div>
+        <div class="text-xs text-white/40 mt-1">Bounces</div>
+      </div>
+      <div class="text-center">
+        <div class="text-3xl font-bold text-white">{{ daily_cap }}</div>
+        <div class="text-xs text-white/40 mt-1">Daily Cap</div>
+      </div>
+    </div>
+    <!-- Daily progress bar -->
+    {% if daily_cap %}
+    <div class="mt-4">
+      {% with pct=sent_today|add:0 %}
+      <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-brand-500 transition-all"
+             style="width:{% widthratio sent_today daily_cap 100 %}%"></div>
+      </div>
+      <p class="text-xs text-white/30 mt-1">{{ sent_today }}/{{ daily_cap }} cap used today</p>
+      {% endwith %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 7-day history -->
+  <div class="card rounded-xl p-5">
+    <h3 class="text-sm font-semibold text-white/80 mb-4">Last 7 Days</h3>
+    <div class="flex items-end gap-2 h-20">
+      {% for day in history %}
+      {% with max_val=200 %}
+      <div class="flex-1 flex flex-col items-center gap-1">
+        <div class="w-full rounded-t-sm bg-brand-500/60 transition-all relative group"
+             style="height: {% widthratio day.sent 200 80 %}px; min-height: 2px;">
+          <div class="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-white/0 group-hover:text-white/80 whitespace-nowrap transition-all">
+            {{ day.sent }}
+          </div>
+        </div>
+        {% if day.fail > 0 %}
+        <div class="w-full rounded-t-sm bg-red-500/40"
+             style="height: {% widthratio day.fail 200 80 %}px; min-height: 1px;"></div>
+        {% endif %}
+        <div class="text-xs text-white/30 truncate w-full text-center">{{ day.label }}</div>
+      </div>
+      {% endwith %}
+      {% endfor %}
+    </div>
+    <div class="flex gap-4 mt-2 text-xs text-white/30">
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-brand-500/60 inline-block"></span> Sent</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-red-500/40 inline-block"></span> Bounced</span>
+    </div>
+  </div>
+</div>
+
+<!-- Per-Campaign Breakdown -->
+<div class="card rounded-xl p-5 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-sm font-semibold text-white/80">Campaign Progress</h3>
+    <a href="/compose/" class="btn-primary text-xs px-4 py-1.5 rounded-lg text-white font-medium">+ New Campaign</a>
+  </div>
+
+  {% if campaign_rows %}
+  <div class="space-y-4">
+    {% for row in campaign_rows %}
+    <div class="border border-white/5 rounded-xl p-4 hover:border-white/10 transition-colors">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <a href="/campaigns/{{ row.campaign.pk }}/"
+             class="text-sm font-medium text-white hover:text-brand-300 transition-colors">
+            {{ row.campaign.name }}
+          </a>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span class="text-xs px-2 py-0.5 rounded-full
+              {% if row.campaign.status == 'done' %}bg-green-500/20 text-green-300
+              {% elif row.campaign.status == 'sending' or row.campaign.status == 'approved' %}bg-brand-500/20 text-brand-300
+              {% elif row.campaign.status == 'paused' %}bg-orange-500/20 text-orange-300
+              {% else %}bg-white/10 text-white/40{% endif %}">
+              {{ row.campaign.get_status_display }}
+            </span>
+            {% if row.campaign.target_category != 'all' %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300">
+              {{ row.campaign.get_target_category_display }}
+            </span>
+            {% endif %}
+            <span class="text-xs text-white/30">{{ row.campaign.created_at|date:"d M Y" }}</span>
+          </div>
+        </div>
+        <div class="text-right flex flex-col items-end gap-1.5">
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="startLiveDispatch('{{ row.campaign.pk }}', '{{ row.campaign.name|escapejs }}', 20)"
+                    class="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Dispatch up to 20 emails live with visual transmission stream">
+              ⚡ Send Live
+            </button>
+            <div class="text-sm font-bold text-white">{{ row.pct }}%</div>
+          </div>
+          <div class="text-xs text-white/30">{{ row.sent }}/{{ row.total }}</div>
+        </div>
+      </div>
+      <!-- Progress bar -->
+      <div class="h-1.5 bg-white/5 rounded-full overflow-hidden mt-2">
+        <div class="h-full rounded-full transition-all
+          {% if row.pct == 100 %}bg-green-500{% else %}bg-brand-500{% endif %}"
+             style="width:{{ row.pct }}%"></div>
+      </div>
+      <!-- Stats row -->
+      <div class="flex gap-4 mt-2 text-xs text-white/30">
+        <span class="text-green-400">{{ row.sent }} sent</span>
+        <span class="text-yellow-400">{{ row.queued }} queued</span>
+        {% if row.failed %}<span class="text-red-400">{{ row.failed }} failed</span>{% endif %}
+        {% if row.skipped %}<span>{{ row.skipped }} skipped</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-8 text-white/30 text-sm">
+    No campaigns yet.
+    <a href="/compose/" class="text-brand-400 hover:text-brand-300 ml-1">Create your first →</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Lead Category Breakdown -->
+{% if cat_labels %}
+<div class="card rounded-xl p-5">
+  <h3 class="text-sm font-semibold text-white/80 mb-4">Lead Category Breakdown</h3>
+  <div class="space-y-3">
+    {% for i in cat_labels|length|rjust:1 %}{% endfor %}
+    {% for label in cat_labels %}
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-white/50 w-32 shrink-0">{{ label }}</span>
+      <div class="flex-1 bg-white/5 rounded-full h-2 overflow-hidden">
+        <div class="h-full rounded-full bg-brand-500 transition-all"
+             style="width: {% widthratio cat_counts|first cat_counts|first 100 %}%"></div>
+      </div>
+      <span class="text-xs text-white/40 w-16 text-right">
+        {% for count in cat_counts %}{% if forloop.counter0 == forloop.parentloop.counter0 %}{{ count }}{% endif %}{% endfor %}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="text-xs text-white/20 mt-3">
+    Assign categories on the <a href="/leads/" class="underline hover:text-white/40">Leads page</a> to target specific segments with campaigns.
+  </p>
+</div>
+{% endif %}
+
+{% include "includes/live_dispatch_modal.html" %}
+
+{% endblock %}

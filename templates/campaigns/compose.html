@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Compose Campaign — BidAlert{% endblock %}
+{% block page_title %}AI Compose{% endblock %}
+
+{% block content %}
+<form id="composeForm" method="post" action="{% if campaign %}/compose/{{ campaign.pk }}/edit/{% else %}/compose/{% endif %}">
+{% csrf_token %}
+{% if campaign %}<input type="hidden" name="campaign_id" value="{{ campaign.pk }}">{% endif %}
+
+  <!-- Top Navigation Mode Switcher -->
+  <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-6 flex-wrap gap-3">
+    <div class="flex items-center gap-2">
+      <a href="/compose/direct/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Direct Draft & Email Dumper
+      </a>
+      <a href="/compose/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow-sm flex items-center gap-2">
+        <span>✨</span>
+        AI Compose Wizard
+      </a>
+    </div>
+    <div class="flex items-center gap-2 text-xs text-white/40">
+      AI-Assisted Draft &amp; Safety Scoring
+    </div>
+  </div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+  <!-- Left: Intent & Settings -->
+  <div class="space-y-4">
+    
+    <!-- Campaign Name -->
+    <div class="card rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white/80 mb-4">Campaign Details</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-white/50 mb-1.5">Campaign Name</label>
+          <input type="text" name="name" id="id_name" required
+            value="{{ campaign.name|default:'' }}"
+            placeholder="e.g. TiE Con 2024 Follow-up"
+            class="w-full px-3 py-2 rounded-lg text-sm border">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-white/50 mb-1.5">Lane</label>
+            <select name="lane" id="id_lane" class="w-full px-3 py-2 rounded-lg text-sm border">
+              {% for val, label in lane_choices %}
+              <option value="{{ val }}" {% if campaign and campaign.lane == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-white/50 mb-1.5">Tone</label>
+            <select name="tone" id="id_tone" class="w-full px-3 py-2 rounded-lg text-sm border">
+              {% for val, label in tone_choices %}
+              <option value="{{ val }}" {% if campaign and campaign.tone == val %}selected{% elif not campaign and val == 'professional' %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audience -->
+    <div class="card rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white/80 mb-4">Audience Filter</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-white/50 mb-1.5">Filter by Event</label>
+          <select name="audience_event" id="id_audience_event" class="w-full px-3 py-2 rounded-lg text-sm border">
+            <option value="">— All Events —</option>
+            {% for event in events %}
+            <option value="{{ event }}" {% if campaign and campaign.audience_event == event %}selected{% endif %}>{{ event }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-xs text-white/30 mt-1">If set, AI will reference this event in the first line.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-white/50 mb-1.5">Filter by Status</label>
+          <select name="audience_status" id="id_audience_status" class="w-full px-3 py-2 rounded-lg text-sm border">
+            <option value="">— All Statuses —</option>
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if campaign and campaign.audience_status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Intent -->
+    <div class="card rounded-xl p-5">
+      <h3 class="text-sm font-semibold text-white/80 mb-2">Intent (Plain English)</h3>
+      <p class="text-xs text-white/40 mb-3">Tell AI what this email should accomplish. Be specific.</p>
+      <textarea name="intent_prompt" id="id_intent" rows="5" required
+        placeholder="e.g. Follow up with the people we met at TiE Con 2024. Remind them we offer tender alerts. Mention the GROWTH plan's 14-day free trial. Ask them to schedule a demo call."
+        class="w-full px-3 py-2 rounded-lg text-sm border resize-none">{{ campaign.intent_prompt|default:'' }}</textarea>
+      
+      <button type="button" id="generateBtn" onclick="generateDraft()"
+        class="mt-4 w-full btn-primary py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Generate AI Draft
+      </button>
+    </div>
+
+    <!-- Spam Score Panel -->
+    <div id="spamPanel" class="{% if not campaign or not campaign.spam_score %}hidden{% endif %} card rounded-xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-semibold text-white/80">Deliverability Score</h3>
+        <div id="scoreDisplay" class="text-2xl font-bold {% if campaign and campaign.spam_score and campaign.spam_score >= 7 %}text-green-400{% else %}text-red-400{% endif %}">
+          {% if campaign and campaign.spam_score %}{{ campaign.spam_score }}/10{% endif %}
+        </div>
+      </div>
+      <!-- Score bar -->
+      <div class="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+        <div id="scoreBar" class="h-full rounded-full transition-all duration-700
+          {% if campaign and campaign.spam_score and campaign.spam_score >= 7 %}bg-green-400{% else %}bg-red-400{% endif %}"
+          style="width: {% if campaign and campaign.spam_score %}{{ campaign.spam_score|floatformat:0 }}0{% else %}0{% endif %}%"></div>
+      </div>
+      <div id="spamIssues" class="space-y-1.5">
+        {% if campaign and campaign.spam_issues %}
+        {% for issue in campaign.spam_issues %}
+        <div class="text-xs text-yellow-300 flex items-start gap-2">
+          <span class="text-yellow-400 mt-0.5">⚠</span><span>{{ issue }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+      <div id="scoreNote" class="mt-3 text-xs {% if campaign and campaign.spam_score and campaign.spam_score >= 7 %}text-green-400{% else %}text-red-400{% endif %}">
+        {% if campaign and campaign.spam_score %}
+          {% if campaign.spam_score >= 7 %}✓ Score ≥ 7 — can approve{% else %}✗ Score < 7 — cannot approve{% endif %}
+        {% endif %}
+      </div>
+      <!-- Hidden fields for form submission -->
+      <input type="hidden" name="spam_score" id="hidden_spam_score" value="{{ campaign.spam_score|default:'' }}">
+      <input type="hidden" name="spam_issues" id="hidden_spam_issues" value="{{ campaign.spam_issues|default:'[]' }}">
+    </div>
+
+  </div>
+
+  <!-- Right: Draft Preview & Edit -->
+  <div class="space-y-4">
+    
+    <!-- Subject -->
+    <div class="card rounded-xl p-5">
+      <label class="block text-xs font-medium text-white/50 mb-1.5">Subject Line <span class="text-white/30">(max 50 chars)</span></label>
+      <input type="text" name="subject" id="id_subject" maxlength="80"
+        value="{{ campaign.subject|default:'' }}"
+        placeholder="Your email subject will appear here after generation..."
+        class="w-full px-3 py-2 rounded-lg text-sm border">
+      <div class="flex justify-end mt-1">
+        <span id="subjectCount" class="text-xs text-white/30">0 / 50</span>
+      </div>
+    </div>
+
+    <!-- Body Text -->
+    <div class="card rounded-xl p-5">
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs font-medium text-white/50">Email Body (Plain Text)</label>
+        <span class="text-xs text-white/30">Edit freely after generation</span>
+      </div>
+      <textarea name="body_text" id="id_body_text" rows="12"
+        placeholder="AI-generated email content will appear here..."
+        class="w-full px-3 py-2 rounded-lg text-sm border resize-none font-mono">{{ campaign.body_text|default:'' }}</textarea>
+    </div>
+
+    <!-- HTML Body (collapsed) -->
+    <div class="card rounded-xl p-5">
+      <details {% if campaign and campaign.body_html %}open{% endif %}>
+        <summary class="text-xs font-medium text-white/50 cursor-pointer mb-2">HTML Version (auto-generated)</summary>
+        <textarea name="body_html" id="id_body_html" rows="8"
+          placeholder="HTML version..."
+          class="w-full mt-2 px-3 py-2 rounded-lg text-sm border resize-none font-mono text-xs">{{ campaign.body_html|default:'' }}</textarea>
+      </details>
+    </div>
+
+    <!-- ── Live Email Preview ── -->
+    <div class="card rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          <span class="text-xs font-semibold text-white/70">Email Preview</span>
+          <span class="text-xs text-white/30">— how it looks in the inbox</span>
+        </div>
+        <button type="button" onclick="refreshPreview()"
+          class="text-xs px-3 py-1.5 rounded-lg font-medium text-brand-400 border border-brand-400/30 hover:bg-brand-400/10 transition-colors flex items-center gap-1.5">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Refresh Preview
+        </button>
+      </div>
+      <!-- iframe renders HTML email safely -->
+      <iframe id="emailPreviewFrame"
+        sandbox="allow-same-origin"
+        style="width:100%;height:420px;border:0;background:#ffffff;display:block;"
+        srcdoc="<html><body style='font-family:Arial,sans-serif;color:#333;padding:32px;text-align:center;'><p style='color:#999;font-size:13px;'>Click <strong>Refresh Preview</strong> or generate a draft to see the email here.</p></body></html>">
+      </iframe>
+    </div>
+
+    <!-- ── Banner Insert Card (always visible) ── -->
+    <div class="card rounded-xl p-4" style="border:1px solid rgba(99,102,241,0.25);background:rgba(99,102,241,0.06);">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <p class="text-xs font-semibold text-white/80">📌 Clickable Image Banner</p>
+          <p class="text-xs text-white/40 mt-0.5">Inserts a logo image into the HTML body — customers click it to visit the Plans page.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Live preview of the banner -->
+        <a href="https://bid1.bidalert.in/plans" target="_blank"
+           style="display:inline-block;background:#fff;border-radius:8px;padding:6px 10px;flex-shrink:0;text-decoration:none;">
+          <img src="{% static 'bidalert_logo.jpg' %}"
+               alt="BidAlert Logo"
+               style="height:36px;width:auto;display:block;">
+        </a>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-white/50 font-mono truncate mb-2">→ bid1.bidalert.in/plans</p>
+          <button type="button" onclick="insertBanner()"
+            class="btn-primary text-xs px-4 py-2 rounded-lg font-semibold text-white flex items-center gap-2">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Insert into HTML Body
+          </button>
+        </div>
+      </div>
+      <!-- confirmation flash -->
+      <p id="bannerConfirm" class="hidden text-xs text-green-400 mt-2">✓ Banner added to HTML body!</p>
+    </div>
+
+    <!-- Dispatch & Scheduling -->
+    <div class="card rounded-xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-white/10 pb-2">
+        <h3 class="text-sm font-semibold text-white/90">Dispatch &amp; Scheduling</h3>
+        <a href="/scheduler/" target="_blank" class="text-xs text-brand-300 hover:text-white flex items-center gap-1">
+          <span>🕒</span> Scheduler Hub →
+        </a>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Option 1: Schedule for Date & Time -->
+        <label class="flex items-start gap-3 p-3 rounded-lg border border-brand-500/30 cursor-pointer bg-brand-500/5 hover:border-brand-500/50 transition-colors">
+          <input type="radio" name="send_action" value="schedule" checked id="aiRadioSchedule" class="mt-1 text-brand-500" onchange="toggleAiSchedule(this.value)">
+          <div class="flex-1">
+            <p class="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>📅</span> Schedule for Future Date &amp; Time
+            </p>
+            <p class="text-[11px] text-white/50 mt-0.5 mb-2">Puts the campaign directly into your Scheduler pipeline for automatic dispatch.</p>
+            <div id="aiScheduleTimeWrapper" class="space-y-2 mt-1">
+              <input type="datetime-local" name="schedule_datetime" id="aiScheduleTime"
+                value="{{ campaign.start_at|date:'Y-m-d\TH:i' }}"
+                class="w-full px-3 py-1.5 rounded-lg text-xs border font-mono">
+              <p class="text-[10px] text-white/40">Leave empty to dispatch as soon as your active delivery window opens.</p>
+            </div>
+          </div>
+        </label>
+
+        <!-- Option 2: Submit for Approval / Direct Queue -->
+        <label class="flex items-start gap-3 p-3 rounded-lg border border-white/10 hover:border-brand-500/30 cursor-pointer bg-white/2 transition-colors">
+          <input type="radio" name="send_action" value="approve" id="aiRadioApprove" class="mt-1 text-brand-500" onchange="toggleAiSchedule(this.value)">
+          <div>
+            <p class="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>✓</span> Submit for Approval / Queue Now
+            </p>
+            <p class="text-[11px] text-white/50 mt-0.5">Approve and queue target audience leads immediately for the sender worker.</p>
+          </div>
+        </label>
+
+        <!-- Option 3: Draft only -->
+        <label class="flex items-start gap-3 p-3 rounded-lg border border-white/10 hover:border-brand-500/30 cursor-pointer bg-white/2 transition-colors">
+          <input type="radio" name="send_action" value="save" id="aiRadioDraft" class="mt-1 text-brand-500" onchange="toggleAiSchedule(this.value)">
+          <div>
+            <p class="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>💾</span> Save as Draft Only
+            </p>
+            <p class="text-[11px] text-white/50 mt-0.5">Keep in drafts without queueing leads or scheduling a send time.</p>
+          </div>
+        </label>
+      </div>
+
+      <!-- Submit CTA button -->
+      <button type="submit" id="mainSubmitBtn"
+        class="w-full btn-primary py-3 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 cursor-pointer">
+        <span id="mainSubmitText">📅 Confirm &amp; Schedule Campaign →</span>
+      </button>
+
+      {% if campaign and campaign.spam_score and campaign.spam_score < 7 %}
+      <p class="text-xs text-amber-400 text-center">Note: Spam safety score is {{ campaign.spam_score }}/10. Generating a draft improves score.</p>
+      {% endif %}
+
+      {% if campaign %}
+      <div class="text-center pt-1 border-t border-white/10">
+        <a href="/campaigns/{{ campaign.pk }}/" class="text-xs text-brand-400 hover:text-brand-300">View campaign page →</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+</form>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(15,12,41,0.8);backdrop-filter:blur(8px);">
+  <div class="card rounded-2xl p-8 text-center max-w-xs">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-600/20 mb-4">
+      <svg class="w-8 h-8 text-brand-400 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+    </div>
+    <div class="text-sm font-medium text-white mb-1">AI Drafting...</div>
+    <div class="text-xs text-white/40" id="loadingStep">Loading Knowledge Base</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Subject char counter
+const subjectInput = document.getElementById('id_subject');
+const subjectCount = document.getElementById('subjectCount');
+if (subjectInput) {
+  const update = () => {
+    const len = subjectInput.value.length;
+    subjectCount.textContent = `${len} / 50`;
+    subjectCount.className = `text-xs ${len > 50 ? 'text-red-400' : 'text-white/30'}`;
+  };
+  subjectInput.addEventListener('input', update);
+  update();
+}
+
+// ── Email Preview ─────────────────────────────────────────────────────────
+function refreshPreview() {
+  const html = document.getElementById('id_body_html').value.trim();
+  const subject = document.getElementById('id_subject').value.trim();
+  const frame = document.getElementById('emailPreviewFrame');
+  if (!html) {
+    frame.srcdoc = "<html><body style='font-family:Arial,sans-serif;padding:32px;text-align:center;'><p style='color:#999;font-size:13px;'>No HTML content yet. Generate a draft or insert a banner first.</p></body></html>";
+    return;
+  }
+  // Wrap in a realistic email shell
+  frame.srcdoc = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  body{margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;}
+  .wrapper{max-width:600px;margin:24px auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+  .header{background:#1e1b4b;padding:16px 24px;}
+  .header span{color:#a5b4fc;font-size:13px;font-weight:600;}
+  .subject{padding:14px 24px 0;font-size:15px;font-weight:700;color:#111;border-bottom:1px solid #eee;padding-bottom:14px;}
+  .body{padding:24px;}
+</style>
+</head><body>
+<div class="wrapper">
+  <div class="header"><span>BidAlert Comms Hub &mdash; Email Preview</span></div>
+  ${subject ? '<div class="subject">Subject: ' + subject + '</div>' : ''}
+  <div class="body">${html}</div>
+</div>
+</body></html>`;
+}
+
+const BANNER_IMG_URL = "{% static 'bidalert_logo.jpg' %}";
+const BANNER_HTML = `
+<!-- BidAlert Plans Banner -->
+<div style="text-align:center;margin:24px 0;">
+  <a href="https://bid1.bidalert.in/plans" target="_blank" rel="noopener"
+     style="display:inline-block;text-decoration:none;">
+    <img src="${BANNER_IMG_URL}"
+         alt="View BidAlert Plans"
+         width="220"
+         style="width:220px;height:auto;display:block;border:0;border-radius:8px;" />
+  </a>
+</div>
+<!-- /BidAlert Plans Banner -->`;
+
+function insertBanner() {
+  const ta = document.getElementById('id_body_html');
+  ta.value = (ta.value ? ta.value + '\n' : '') + BANNER_HTML.trim();
+  // auto-open the HTML details panel so they can see it
+  const details = ta.closest('details');
+  if (details) details.open = true;
+  ta.scrollTop = ta.scrollHeight;
+  // show confirmation
+  const confirm = document.getElementById('bannerConfirm');
+  confirm.classList.remove('hidden');
+  setTimeout(() => confirm.classList.add('hidden'), 3000);
+  // refresh preview automatically
+  refreshPreview();
+}
+
+async function generateDraft() {
+
+  const intent = document.getElementById('id_intent').value.trim();
+  if (!intent) { alert('Please describe your intent first.'); return; }
+
+  const overlay = document.getElementById('loadingOverlay');
+  const loadingStep = document.getElementById('loadingStep');
+  overlay.classList.remove('hidden');
+
+  const steps = ['Loading Knowledge Base...', 'Calling Gemini AI...', 'Checking spam score...', 'Finalising draft...'];
+  let stepIdx = 0;
+  const stepInterval = setInterval(() => {
+    stepIdx = (stepIdx + 1) % steps.length;
+    loadingStep.textContent = steps[stepIdx];
+  }, 1500);
+
+  try {
+    const resp = await fetch('/compose/generate/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
+      body: JSON.stringify({
+        intent: intent,
+        audience_event: document.getElementById('id_audience_event').value,
+        audience_status: document.getElementById('id_audience_status').value,
+        tone: document.getElementById('id_tone').value,
+      })
+    });
+
+    const data = await resp.json();
+
+    if (data.error) {
+      alert('Error: ' + data.error);
+      return;
+    }
+
+    // Populate fields
+    document.getElementById('id_subject').value = data.subject;
+    document.getElementById('id_body_text').value = data.body_text;
+    document.getElementById('id_body_html').value = data.body_html;
+    document.getElementById('hidden_spam_score').value = data.spam_score;
+    document.getElementById('hidden_spam_issues').value = JSON.stringify(data.spam_issues);
+
+    // Update subject counter
+    subjectInput.dispatchEvent(new Event('input'));
+
+    // Auto-refresh the email preview
+    refreshPreview();
+
+    // Show spam panel
+    updateSpamPanel(data.spam_score, data.spam_issues);
+
+  } catch(e) {
+    alert('Network error: ' + e.message);
+  } finally {
+    clearInterval(stepInterval);
+    overlay.classList.add('hidden');
+  }
+}
+
+function updateSpamPanel(score, issues) {
+  const panel = document.getElementById('spamPanel');
+  const display = document.getElementById('scoreDisplay');
+  const bar = document.getElementById('scoreBar');
+  const issuesDiv = document.getElementById('spamIssues');
+  const note = document.getElementById('scoreNote');
+  const approveBtn = document.getElementById('approveBtn');
+
+  panel.classList.remove('hidden');
+  display.textContent = `${score}/10`;
+  
+  const isGood = score >= 7;
+  display.className = `text-2xl font-bold ${isGood ? 'text-green-400' : 'text-red-400'}`;
+  bar.style.width = `${score * 10}%`;
+  bar.className = `h-full rounded-full transition-all duration-700 ${isGood ? 'bg-green-400' : 'bg-red-400'}`;
+  
+  issuesDiv.innerHTML = issues.map(i => 
+    `<div class="text-xs text-yellow-300 flex items-start gap-2"><span class="text-yellow-400 mt-0.5">⚠</span><span>${i}</span></div>`
+  ).join('');
+  
+  note.textContent = isGood ? '✓ Score ≥ 7 — can approve' : '✗ Score < 7 — cannot approve';
+  note.className = `mt-3 text-xs ${isGood ? 'text-green-400' : 'text-red-400'}`;
+  
+  if (approveBtn) approveBtn.disabled = !isGood;
+}
+
+function toggleAiSchedule(val) {
+  const wrapper = document.getElementById('aiScheduleTimeWrapper');
+  const btnText = document.getElementById('mainSubmitText');
+  if (val === 'schedule') {
+    if (wrapper) wrapper.classList.remove('hidden');
+    if (btnText) btnText.textContent = '📅 Confirm & Schedule Campaign →';
+  } else if (val === 'approve') {
+    if (wrapper) wrapper.classList.add('hidden');
+    if (btnText) btnText.textContent = '✓ Submit & Queue Campaign →';
+  } else {
+    if (wrapper) wrapper.classList.add('hidden');
+    if (btnText) btnText.textContent = '💾 Save Campaign Draft';
+  }
+}
+</script>
+{% endblock %}

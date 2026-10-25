@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — BidAlert Comms Hub{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+{% if paused %}
+<span class="flex items-center gap-1.5 text-xs text-orange-400 bg-orange-400/10 border border-orange-400/20 px-3 py-1.5 rounded-full">
+  <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-orange-400"></span>
+  Sending Paused
+</span>
+{% else %}
+<span class="flex items-center gap-1.5 text-xs text-green-400 bg-green-400/10 border border-green-400/20 px-3 py-1.5 rounded-full">
+  <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-green-400"></span>
+  Sending Active
+</span>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Live Refresh Bar -->
+<div class="flex items-center justify-between mb-4 px-1">
+  <div class="flex items-center gap-2 text-xs text-white/30">
+    <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-brand-400 inline-block"></span>
+    <span id="lastRefreshed">Loading stats...</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <button onclick="syncBouncesDashboard()" id="syncBouncesDashBtn"
+      class="flex items-center gap-1.5 text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-lg transition-all"
+      title="Check Gmail for Mail Delivery Subsystem bounce-backs and auto-suppress dead leads">
+      <svg id="syncBouncesDashIcon" class="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      Sync Bounces
+    </button>
+    <button onclick="refreshStats()" id="refreshBtn"
+      class="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-all">
+      <svg id="refreshIcon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Refresh
+    </button>
+  </div>
+</div>
+
+<!-- Low Leads Daily Alert Banner -->
+{% if low_leads_alert %}
+<div class="card rounded-2xl p-4 mb-6 border border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in">
+  <div class="flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-xl font-bold flex-shrink-0 border border-amber-500/30">
+      ⚠️
+    </span>
+    <div>
+      <h3 class="text-sm font-bold text-white flex items-center gap-2">
+        Low Leads Alert
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+          {{ new_leads }} Leads Remaining
+        </span>
+      </h3>
+      <p class="text-xs text-white/60 mt-0.5">
+        Targeted Pool: <strong>{{ targeted_new }}</strong> · Direct Draft Pool: <strong>{{ direct_new }}</strong>.
+        At your sending cap of <strong>{{ daily_cap }}/day</strong>, leads will run out in approx <strong>{{ days_left }} day(s)</strong>.
+        Daily notification alert is active.
+      </p>
+    </div>
+  </div>
+  <a href="/leads/upload/" class="w-full md:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black flex items-center justify-center gap-1.5 shadow transition-all">
+    ⚡ Upload &amp; Sort Real Leads →
+  </a>
+</div>
+{% endif %}
+
+<!-- Stats Row -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <!-- Sent Today -->
+  <div class="stat-card rounded-xl p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Sent Today</div>
+      <div class="text-brand-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+      </div>
+    </div>
+    <div id="stat-sent-today" class="text-3xl font-bold text-white mb-1">{{ sent_today }}</div>
+    <div class="text-xs text-white/40">of <span id="stat-daily-cap">{{ daily_cap }}</span> cap</div>
+    <!-- Progress bar -->
+    <div class="mt-3 h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div id="cap-progress-bar" class="h-full rounded-full transition-all {% if cap_pct > 80 %}bg-red-400{% elif cap_pct > 50 %}bg-yellow-400{% else %}bg-brand-400{% endif %}"
+           style="width: {{ cap_pct }}%"></div>
+    </div>
+  </div>
+
+  <!-- Bounces Today -->
+  <div class="stat-card rounded-xl p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Bounces Today</div>
+      <div class="{% if bounced_today > 4 %}text-red-400{% else %}text-white/30{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div id="stat-bounced-today" class="text-3xl font-bold text-white mb-1">
+      {{ bounced_today }}
+    </div>
+    <div id="stat-bounce-label" class="text-xs text-white/40">Auto-pause at 5</div>
+  </div>
+
+  <!-- Queue Depth -->
+  <div class="stat-card rounded-xl p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Queued</div>
+      <div class="text-yellow-400">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      </div>
+    </div>
+    <div id="stat-queue" class="text-3xl font-bold text-white mb-1">{{ queue_depth }}</div>
+    <div class="text-xs text-white/40">emails awaiting send</div>
+    <button id="processQueueBtn" onclick="processQueueLoop()"
+      class="mt-3 w-full btn-primary text-xs py-1.5 rounded-lg font-medium"
+      {% if not queue_depth or paused %}style="display:none"{% endif %}>
+      ▶ Process Queue
+    </button>
+  </div>
+
+  <!-- Suppressed -->
+  <div class="stat-card rounded-xl p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Suppressed</div>
+      <div class="text-white/30">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+      </div>
+    </div>
+    <div id="stat-suppressed" class="text-3xl font-bold text-white mb-1">{{ suppression_count }}</div>
+    <div class="text-xs text-white/40">unsub / bounced</div>
+  </div>
+</div>
+
+{% if low_leads_alert %}
+<!-- Low Leads Alert Banner -->
+<div class="mb-6 px-5 py-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-start gap-3 slide-in">
+  <svg class="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+  </svg>
+  <div>
+    <div class="text-sm font-semibold text-yellow-300">⚠ Low Leads — Only {{ days_left }} day{{ days_left|pluralize }} left!</div>
+    <div class="text-xs text-yellow-300/70 mt-0.5">
+      Only <strong>{{ remaining|default:"0" }}</strong> uncontacted leads remain at {{ daily_cap }}/day.
+      <a href="/leads/upload/" class="underline hover:text-yellow-200 ml-1">Upload a new CSV now →</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Lead Pipeline Progress -->
+<div class="card rounded-xl p-5 mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-sm font-semibold text-white/80">📊 Lead Pipeline Progress</h3>
+    <span id="pipeline-pct" class="text-xs text-white/40">{{ progress_pct }}% complete</span>
+  </div>
+
+  <!-- Overall progress bar -->
+  <div class="h-2 bg-white/5 rounded-full overflow-hidden mb-5">
+    <div id="pipeline-bar" class="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400 transition-all"
+         style="width: {{ progress_pct }}%"></div>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="text-center">
+      <div id="stat-total-leads" class="text-2xl font-bold text-white">{{ total_leads|default:"0" }}</div>
+      <div class="text-xs text-white/40 mt-0.5">Total Leads</div>
+    </div>
+    <div class="text-center">
+      <div id="stat-contacted" class="text-2xl font-bold text-green-400">{{ contacted_leads|default:"0" }}</div>
+      <div class="text-xs text-white/40 mt-0.5">Contacted</div>
+    </div>
+    <div class="text-center">
+      <div id="stat-remaining" class="text-2xl font-bold text-brand-400">{{ new_leads|default:"0" }}</div>
+      <div class="text-xs text-white/40 mt-0.5">Remaining</div>
+    </div>
+    <div class="text-center">
+      <div class="text-2xl font-bold text-white/50">{{ suppressed_leads|default:"0" }}</div>
+      <div class="text-xs text-white/40 mt-0.5">Suppressed</div>
+    </div>
+    <div class="text-center">
+      <div class="text-2xl font-bold {% if days_left < 10 %}text-yellow-400{% else %}text-white{% endif %}">
+        {{ days_left }}
+      </div>
+      <div class="text-xs text-white/40 mt-0.5">Days Left</div>
+      <div class="text-xs text-white/20">at {{ daily_cap }}/day</div>
+    </div>
+  </div>
+
+  {% if total_leads == 0 %}
+  <div class="mt-4 text-center py-4 border border-dashed border-white/10 rounded-lg">
+    <p class="text-xs text-white/40 mb-2">No leads yet — upload your CSV to get started</p>
+    <a href="/leads/upload/" class="btn-primary text-xs px-4 py-1.5 rounded-lg text-white font-medium">Upload CSV →</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Row 2: Status Cards -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+  <!-- Gmail Status -->
+  <div class="card p-5 rounded-xl">
+    <h3 class="text-sm font-semibold text-white/80 mb-4">Gmail Connection</h3>
+    {% if gmail_connected %}
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div>
+        <div class="text-sm font-medium text-green-300">Connected</div>
+        <div class="text-xs text-white/40">{{ gmail_email }}</div>
+      </div>
+    </div>
+    <a href="/gmail/disconnect/" onclick="return confirm('Disconnect Gmail?')"
+       class="text-xs text-red-400 hover:text-red-300 transition-colors">Disconnect →</a>
+    {% else %}
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </div>
+      <div>
+        <div class="text-sm font-medium text-red-300">Not Connected</div>
+        <div class="text-xs text-white/40">Cannot send emails</div>
+      </div>
+    </div>
+    <a href="/gmail/connect/" class="btn-primary text-xs font-medium px-4 py-2 rounded-lg text-white inline-block">
+      Connect Gmail →
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Send Pause Toggle -->
+  <div class="card p-5 rounded-xl">
+    <h3 class="text-sm font-semibold text-white/80 mb-4">Send Switch</h3>
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-sm {% if paused %}text-orange-400{% else %}text-green-400{% endif %} font-medium">
+        {% if paused %}⏸ Paused{% else %}▶ Active{% endif %}
+      </span>
+      {% if user.is_staff %}
+      <button id="pauseToggleBtn" onclick="togglePause()"
+        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+          {% if paused %}bg-orange-500{% else %}bg-brand-500{% endif %}">
+        <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+          {% if paused %}translate-x-1{% else %}translate-x-6{% endif %}"></span>
+      </button>
+      {% endif %}
+    </div>
+    {% if auto_paused %}
+    <p class="text-xs text-orange-300">Auto-paused: bounce threshold exceeded today. Review logs before resuming.</p>
+    {% else %}
+    <p class="text-xs text-white/40">Staff can pause/resume all sending globally.</p>
+    {% endif %}
+  </div>
+
+  <!-- Quick Links -->
+  <div class="card p-5 rounded-xl">
+    <h3 class="text-sm font-semibold text-white/80 mb-4">Quick Actions</h3>
+    <div class="space-y-2">
+      <a href="/leads/upload/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        Upload Leads (CSV)
+      </a>
+      <a href="/compose/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        New AI Campaign
+      </a>
+      <a href="/knowledge/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253"/></svg>
+        Update Knowledge Base
+      </a>
+      <a href="/logs/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        Audit Trail
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Campaigns -->
+<div class="card rounded-xl overflow-hidden">
+  <div class="px-5 py-4 border-b border-white/8 flex items-center justify-between">
+    <h3 class="text-sm font-semibold text-white/80">Recent Campaigns</h3>
+    <a href="/campaigns/" class="text-xs text-brand-400 hover:text-brand-300">View all →</a>
+  </div>
+  {% if recent_campaigns %}
+  <div class="divide-y divide-white/5">
+    {% for c in recent_campaigns %}
+    <a href="/campaigns/{{ c.pk }}/" class="table-row flex items-center gap-4 px-5 py-3.5">
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium text-white truncate">{{ c.name }}</div>
+        <div class="text-xs text-white/40">{{ c.lane }} · {{ c.created_at|date:"M d, Y" }}</div>
+      </div>
+      <span class="badge-{{ c.status }} text-xs px-2.5 py-1 rounded-full font-medium">
+        {{ c.get_status_display }}
+      </span>
+      {% if c.spam_score %}
+      <span class="text-xs {% if c.spam_score >= 7 %}text-green-400{% else %}text-red-400{% endif %} font-mono">
+        {{ c.spam_score }}/10
+      </span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="px-5 py-12 text-center">
+    <div class="text-white/20 text-4xl mb-3">📧</div>
+    <p class="text-sm text-white/40">No campaigns yet.</p>
+    <a href="/compose/" class="inline-block mt-4 btn-primary text-xs font-medium px-4 py-2 rounded-lg text-white">Create First Campaign</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Process Queue Log -->
+<div id="queueLog" class="hidden mt-4 card rounded-xl p-4">
+  <h4 class="text-xs font-semibold text-white/60 mb-2">Queue Processing</h4>
+  <div id="queueLogContent" class="text-xs text-white/50 space-y-1 font-mono"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function processQueueLoop() {
+  const btn = document.getElementById('processQueueBtn');
+  const logDiv = document.getElementById('queueLog');
+  const logContent = document.getElementById('queueLogContent');
+  
+  if (btn) btn.disabled = true;
+  logDiv.classList.remove('hidden');
+  
+  let iteration = 0;
+  
+  while (true) {
+    iteration++;
+    logContent.innerHTML += `<div class="text-brand-400">→ Batch ${iteration}...</div>`;
+    logDiv.scrollTop = logDiv.scrollHeight;
+    
+    try {
+      const resp = await fetch('/api/process-queue', { method: 'POST', headers: { 'X-CSRFToken': getCsrfToken() } });
+      const data = await resp.json();
+      
+      if (data.error) {
+        logContent.innerHTML += `<div class="text-red-400">✗ Error: ${data.error}</div>`;
+        break;
+      }
+      
+      logContent.innerHTML += `<div class="text-green-400">✓ Sent: ${data.sent}, Failed: ${data.failed}, Remaining: ${data.remaining}</div>`;
+      
+      if (data.paused) {
+        logContent.innerHTML += `<div class="text-orange-400">⏸ Sending paused (bounce threshold)</div>`;
+        break;
+      }
+      if (data.cap_reached) {
+        logContent.innerHTML += `<div class="text-yellow-400">🔒 Daily cap reached</div>`;
+        break;
+      }
+      if (data.remaining === 0) {
+        logContent.innerHTML += `<div class="text-green-400 font-semibold">✅ Queue cleared!</div>`;
+        break;
+      }
+      
+      await new Promise(r => setTimeout(r, 500));
+    } catch (e) {
+      logContent.innerHTML += `<div class="text-red-400">✗ Network error: ${e.message}</div>`;
+      break;
+    }
+  }
+  
+  if (btn) btn.disabled = false;
+}
+
+async function togglePause() {
+  await fetch('/settings/toggle-pause/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() }
+  });
+  window.location.reload();
+}
+
+// ── Live Stats Polling ───────────────────────────────────────────
+async function refreshStats() {
+  const icon = document.getElementById('refreshIcon');
+  const label = document.getElementById('lastRefreshed');
+  if (icon) icon.classList.add('animate-spin');
+
+  try {
+    const r = await fetch('/api/stats');
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+
+    // Update stat cards
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('stat-sent-today',    d.sent_today);
+    set('stat-daily-cap',     d.daily_cap);
+    set('stat-bounced-today', d.bounced_today);
+    set('stat-queue',         d.queue_depth);
+    set('stat-suppressed',    d.suppressed);
+
+    // Progress bar for sent today
+    const bar = document.getElementById('cap-progress-bar');
+    if (bar) {
+      bar.style.width = d.cap_pct + '%';
+      bar.className = 'h-full rounded-full transition-all ' +
+        (d.cap_pct > 80 ? 'bg-red-400' : d.cap_pct > 50 ? 'bg-yellow-400' : 'bg-brand-400');
+    }
+
+    // Bounce label
+    const bl = document.getElementById('stat-bounce-label');
+    if (bl) {
+      if (d.bounced_today > 4) {
+        bl.className = 'text-xs text-red-400';
+        bl.textContent = '\u26a0 Auto-paused (>4)';
+      } else {
+        bl.className = 'text-xs text-white/40';
+        bl.textContent = 'Auto-pause at 5';
+      }
+    }
+
+    // Pipeline stats
+    set('stat-total-leads', d.total_leads);
+    set('stat-contacted',   d.contacted);
+    set('stat-remaining',   d.new_leads);
+    set('stat-days-left',   d.days_left);
+    const pb = document.getElementById('pipeline-bar');
+    if (pb) pb.style.width = d.progress_pct + '%';
+    const pp = document.getElementById('pipeline-pct');
+    if (pp) pp.textContent = d.progress_pct + '%';
+
+    // Process Queue button visibility
+    const btn = document.getElementById('processQueueBtn');
+    if (btn) btn.style.display = (d.queue_depth > 0 && !d.paused) ? 'block' : 'none';
+
+    // Active campaign rows
+    if (d.active_campaigns && d.active_campaigns.length) {
+      d.active_campaigns.forEach(c => {
+        const sq = document.getElementById(`camp-sent-${c.id}`);
+        const qq = document.getElementById(`camp-queue-${c.id}`);
+        const pb = document.getElementById(`camp-bar-${c.id}`);
+        if (sq) sq.textContent = c.sent_c;
+        if (qq) qq.textContent = c.queued_c;
+        if (pb && c.total_c) pb.style.width = Math.round(c.sent_c / c.total_c * 100) + '%';
+      });
+    }
+
+    // Timestamp
+    const now = new Date();
+    if (label) label.textContent = `Updated ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+
+  } catch (e) {
+    if (label) label.textContent = 'Refresh failed — retrying in 2 min';
+  } finally {
+    if (icon) icon.classList.remove('animate-spin');
+  }
+}
+
+// Auto-poll every 2 minutes
+refreshStats();
+setInterval(refreshStats, 2 * 60 * 1000);
+
+async function syncBouncesDashboard() {
+  const btn = document.getElementById('syncBouncesDashBtn');
+  const icon = document.getElementById('syncBouncesDashIcon');
+  const label = document.getElementById('lastRefreshed');
+  btn.disabled = true;
+  if (icon) icon.classList.add('animate-spin');
+  if (label) label.textContent = 'Scanning Gmail for bounces...';
+
+  try {
+    const res = await fetch('/api/sync-bounces', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrfToken() }
+    });
+    const d = await res.json();
+    if (d.status === 'ok') {
+      alert(`✅ Bounce Sync Complete!\n• Messages checked: ${d.messages_scanned}\n• Bounced emails found: ${d.bounces_found}\n• Newly suppressed: ${d.suppressed_count}\n• Leads updated: ${d.leads_updated}`);
+    } else if (d.status === 'scope_missing') {
+      alert(`⚠️ ${d.error}`);
+      window.location.href = '/settings/';
+    } else {
+      alert(`❌ Error syncing bounces: ${d.error || 'Unknown error'}`);
+    }
+  } catch (err) {
+    alert(`Failed to sync bounces: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    if (icon) icon.classList.remove('animate-spin');
+    refreshStats();
+  }
+}
+</script>
+{% endblock %}

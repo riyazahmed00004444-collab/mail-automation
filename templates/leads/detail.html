@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ lead.email }} — BidAlert{% endblock %}
+{% block page_title %}Lead Detail{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl">
+  <div class="card rounded-xl p-6 mb-5">
+    <div class="flex items-start justify-between flex-wrap gap-4 mb-5">
+      <div>
+        <h2 class="text-lg font-bold text-white">{{ lead.name|default:lead.email }}</h2>
+        <div class="text-sm text-white/50 mt-0.5">{{ lead.email }}</div>
+        {% if lead.company %}
+        <div class="text-sm text-brand-400">{{ lead.company }}</div>
+        {% endif %}
+      </div>
+      <span class="badge-{{ lead.status }} text-xs px-3 py-1.5 rounded-full font-medium">{{ lead.get_status_display }}</span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      {% if lead.phone %}
+      <div><span class="text-white/40">Phone</span><div class="text-white mt-0.5">{{ lead.phone }}</div></div>
+      {% endif %}
+      {% if lead.source %}
+      <div><span class="text-white/40">Source / Event</span><div class="text-white mt-0.5">{{ lead.source }}</div></div>
+      {% endif %}
+      {% if lead.event_date %}
+      <div><span class="text-white/40">Event Date</span><div class="text-white mt-0.5">{{ lead.event_date|date:"M d, Y" }}</div></div>
+      {% endif %}
+      {% if lead.last_contacted_at %}
+      <div><span class="text-white/40">Last Contacted</span><div class="text-white mt-0.5">{{ lead.last_contacted_at|date:"M d, Y H:i" }}</div></div>
+      {% endif %}
+      <div><span class="text-white/40">Added</span><div class="text-white mt-0.5">{{ lead.created_at|date:"M d, Y" }}</div></div>
+    </div>
+
+    {% if lead.interest %}
+    <div class="mt-4 border-t border-white/8 pt-4">
+      <div class="text-xs text-white/40 mb-1">Interest</div>
+      <p class="text-sm text-white/70">{{ lead.interest }}</p>
+    </div>
+    {% endif %}
+    {% if lead.notes %}
+    <div class="mt-3">
+      <div class="text-xs text-white/40 mb-1">Notes</div>
+      <p class="text-sm text-white/70">{{ lead.notes }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Send History -->
+  <div class="card rounded-xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-white/8">
+      <h3 class="text-xs font-semibold text-white/50 uppercase tracking-wide">Email History</h3>
+    </div>
+    {% if logs %}
+    <div class="divide-y divide-white/5">
+      {% for log in logs %}
+      <div class="table-row flex items-center gap-4 px-5 py-3">
+        <span class="badge-{{ log.status }} text-xs px-2 py-0.5 rounded font-medium w-16 text-center">{{ log.get_status_display }}</span>
+        <div class="flex-1">
+          <a href="/campaigns/{{ log.campaign.pk }}/" class="text-sm text-white hover:text-brand-300 transition-colors">{{ log.campaign.name }}</a>
+          {% if log.error %}<div class="text-xs text-red-300 mt-0.5">{{ log.error|truncatechars:80 }}</div>{% endif %}
+        </div>
+        {% if log.sent_at %}
+        <div class="text-xs text-white/30">{{ log.sent_at|date:"M d, H:i" }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-8 text-center text-sm text-white/30">No emails sent yet</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

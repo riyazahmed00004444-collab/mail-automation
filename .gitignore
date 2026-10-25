@@ -1,0 +1,53 @@
+# ─── Secrets & data — NEVER commit these ─────────────────────────────────────
+.env
+.env.*
+# keep only the example template
+!.env.example
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-shm
+*.sqlite3-wal
+db.sqlite3*
+*.csv
+/backups/
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# ─── Django ──────────────────────────────────────────────────────────────────
+*.log
+local_settings.py
+/media/
+/staticfiles/
+/logs/
+
+# ─── Vercel (no longer used) ─────────────────────────────────────────────────
+.vercel/
+vercel.json
+build_files.sh
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+*.bak
+*.orig
+seed.json
+.neon
+node_modules/
