@@ -35,6 +35,5 @@ psycopg2-binary==2.9.9
 # MySQL (if using PythonAnywhere built-in MySQL):
 # mysqlclient==2.2.4
 
-# ─── NOT included (reasons noted) ────────────────────────────────────────────
-# gunicorn — not needed on PythonAnywhere (PA provides its own WSGI server)
-# celery / redis — not needed; using management command + PA scheduled tasks
+# ─── Production WSGI server (Render / Cloud) ──────────────────────────────────
+gunicorn==22.0.0
