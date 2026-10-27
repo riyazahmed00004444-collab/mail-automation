@@ -64,7 +64,7 @@ def process_queue_api(request):
     # Decision: add @csrf_exempt here since cron cannot set CSRF tokens,
     # and we guard with hmac.compare_digest instead (this is the standard Django pattern).
     try:
-        result = run_once()
+        result = run_once(max_seconds=25)
         return JsonResponse(result)
     except Exception as e:
         logger.error('process_queue_api error: %s', e)
