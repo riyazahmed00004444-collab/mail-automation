@@ -3,14 +3,15 @@
 {% block page_title %}Leads{% endblock %}
 
 {% block topbar_actions %}
-<div class="flex items-center gap-2">
+<div class="flex items-center gap-2 flex-wrap justify-end">
   <button onclick="verifyQueuedLeadsUI()" id="verifyLeadsBtn"
-    class="text-xs px-3 py-1.5 rounded-lg border border-brand-500/30 bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 font-medium transition-colors flex items-center gap-1.5"
+    class="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-brand-500/30 bg-brand-500/10 text-brand-300 hover:bg-brand-500/20 font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
     title="Validate email syntax and DNS MX records for queued leads before sending">
-    <svg id="verifyLeadsIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-    Verify Queued (MX Pre-check)
+    <svg id="verifyLeadsIcon" class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    <span class="hidden sm:inline">Verify Queued (MX Pre-check)</span>
+    <span class="sm:hidden">Verify MX</span>
   </button>
-  <a href="/leads/upload/" class="text-xs px-3 py-1.5 rounded-lg border border-white/20 text-white/60 hover:text-white transition-colors">
+  <a href="/leads/upload/" class="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg border border-white/20 text-white/60 hover:text-white transition-colors whitespace-nowrap">
     + Upload CSV
   </a>
 </div>
@@ -19,67 +20,70 @@
 {% block content %}
 
 <!-- Lead Pools Overview (Targeted vs Direct Draft Dumper) -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-5">
   <div class="card rounded-xl p-4 border border-white/10">
     <div class="flex items-center justify-between text-xs text-white/50">
       <span>Total Leads in DB</span>
       <span class="text-[10px] text-white/40">All pools</span>
     </div>
-    <div class="text-2xl font-bold text-white mt-1">{{ total_count|default:total }}</div>
+    <div class="text-xl sm:text-2xl font-bold text-white mt-1">{{ total_count|default:total }}</div>
     <div class="text-xs text-white/40 mt-1">Stored across all channels</div>
   </div>
 
   <div class="card rounded-xl p-4 border border-blue-500/30 bg-blue-950/20">
     <div class="flex items-center justify-between text-xs text-blue-300">
-      <span class="font-semibold flex items-center gap-1.5"><span>🎯</span> Targeted Campaign Pool</span>
-      <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-200">{{ targeted_new }} Ready</span>
+      <span class="font-semibold flex items-center gap-1.5"><span>🎯</span> Targeted Pool</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-200 font-bold">{{ targeted_new }} Ready</span>
     </div>
-    <div class="text-2xl font-bold text-white mt-1">{{ targeted_total }}</div>
-    <div class="text-xs text-white/40 mt-1">{{ targeted_new }} new uncontacted · {{ targeted_contacted }} contacted</div>
+    <div class="text-xl sm:text-2xl font-bold text-white mt-1">{{ targeted_total }}</div>
+    <div class="text-xs text-white/40 mt-1">{{ targeted_new }} new · {{ targeted_contacted }} contacted</div>
   </div>
 
-  <div class="card rounded-xl p-4 border border-purple-500/30 bg-purple-950/20">
+  <div class="card rounded-xl p-4 border border-purple-500/30 bg-purple-950/20 sm:col-span-2 md:col-span-1">
     <div class="flex items-center justify-between text-xs text-purple-300">
-      <span class="font-semibold flex items-center gap-1.5"><span>⚡</span> Direct Draft Dumper Pool</span>
-      <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200">{{ direct_new }} Ready</span>
+      <span class="font-semibold flex items-center gap-1.5"><span>⚡</span> Direct Draft Pool</span>
+      <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200 font-bold">{{ direct_new }} Ready</span>
     </div>
-    <div class="text-2xl font-bold text-white mt-1">{{ direct_total }}</div>
-    <div class="text-xs text-white/40 mt-1">{{ direct_new }} new uncontacted · {{ direct_contacted }} contacted</div>
+    <div class="text-xl sm:text-2xl font-bold text-white mt-1">{{ direct_total }}</div>
+    <div class="text-xs text-white/40 mt-1">{{ direct_new }} new · {{ direct_contacted }} contacted</div>
   </div>
 </div>
 
 <!-- Filters -->
-<div class="card rounded-xl p-4 mb-5 flex flex-wrap gap-3 items-end">
-  <form method="get" class="flex flex-wrap gap-3 flex-1">
+<div class="card rounded-xl p-3.5 sm:p-4 mb-5 flex flex-col md:flex-row gap-3 items-stretch md:items-end justify-between">
+  <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap gap-2.5 sm:gap-3 flex-1">
     <input type="text" name="q" value="{{ q }}" placeholder="Search email, name, company..."
-      class="flex-1 min-w-48 px-3 py-2 rounded-lg text-sm border">
+      class="col-span-1 sm:col-span-2 md:flex-1 min-w-44 px-3 py-2 rounded-lg text-xs sm:text-sm border">
     
-    <select name="channel" class="px-3 py-2 rounded-lg text-sm border min-w-36">
+    <select name="channel" class="px-3 py-2 rounded-lg text-xs sm:text-sm border min-w-32">
       <option value="">All Lead Pools</option>
       {% for val, label in channel_choices %}
       <option value="{{ val }}" {% if channel_filter == val %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
 
-    <select name="status" class="px-3 py-2 rounded-lg text-sm border min-w-36">
+    <select name="status" class="px-3 py-2 rounded-lg text-xs sm:text-sm border min-w-32">
       <option value="">All Statuses</option>
       {% for val, label in status_choices %}
       <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
 
-    <select name="event" class="px-3 py-2 rounded-lg text-sm border min-w-36">
+    <select name="event" class="px-3 py-2 rounded-lg text-xs sm:text-sm border min-w-32">
       <option value="">All Sources</option>
       {% for e in events %}
       <option value="{{ e }}" {% if event_filter == e %}selected{% endif %}>{{ e }}</option>
       {% endfor %}
     </select>
-    <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium text-white cursor-pointer">Filter</button>
-    {% if q or status_filter or event_filter or channel_filter %}
-    <a href="/leads/" class="px-4 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 border border-white/10 transition-colors">Clear</a>
-    {% endif %}
+    
+    <div class="flex items-center gap-2 col-span-1 sm:col-span-2 md:col-span-1">
+      <button type="submit" class="flex-1 md:flex-initial btn-primary px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-white cursor-pointer text-center">Filter</button>
+      {% if q or status_filter or event_filter or channel_filter %}
+      <a href="/leads/" class="flex-1 md:flex-initial text-center px-4 py-2 rounded-lg text-xs sm:text-sm text-white/40 hover:text-white/70 border border-white/10 transition-colors">Clear</a>
+      {% endif %}
+    </div>
   </form>
-  <div class="text-xs text-white/40 font-mono">{{ total }} filtered lead(s)</div>
+  <div class="text-xs text-white/40 font-mono text-right md:text-left">{{ total }} filtered lead(s)</div>
 </div>
 
 <!-- Table -->

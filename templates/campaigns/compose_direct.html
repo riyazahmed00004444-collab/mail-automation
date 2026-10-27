@@ -8,13 +8,13 @@
 <div class="max-w-7xl mx-auto space-y-6">
 
   <!-- Top Navigation Mode Switcher -->
-  <div class="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-3">
-    <div class="flex items-center gap-2">
-      <a href="/compose/direct/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow-sm flex items-center gap-2">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-white/10 pb-3 gap-3">
+    <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+      <a href="/compose/direct/" class="flex-1 sm:flex-initial text-center justify-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow-sm flex items-center gap-2 whitespace-nowrap">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-        Direct Draft & Email Dumper
+        Direct Draft &amp; Dumper
       </a>
-      <a href="/compose/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+      <a href="/compose/" class="flex-1 sm:flex-initial text-center justify-center px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white/60 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2 whitespace-nowrap">
         <span>✨</span>
         AI Compose Wizard
       </a>
@@ -29,23 +29,23 @@
   <form id="directComposeForm" method="post" action="/compose/direct/" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
 
       <!-- LEFT: Draft Content & Editor (7 cols) -->
       <div class="lg:col-span-7 space-y-5">
 
         <!-- Template Selector Banner -->
         <div class="card rounded-xl p-4 bg-gradient-to-r from-brand-900/40 to-indigo-900/20 border border-brand-500/30">
-          <div class="flex items-center justify-between flex-wrap gap-3">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <p class="text-xs font-bold text-brand-300 uppercase tracking-wide">Quick Draft Templates</p>
               <p class="text-xs text-white/60">Load a ready-made proposal draft or start from scratch.</p>
             </div>
-            <div class="flex items-center gap-2">
-              <button type="button" id="btnLoadGemTemplate" class="btn-primary text-xs px-3 py-1.5 rounded-lg font-medium text-white flex items-center gap-1.5">
+            <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+              <button type="button" id="btnLoadGemTemplate" class="flex-1 sm:flex-initial justify-center btn-primary text-xs px-3 py-1.5 rounded-lg font-medium text-white flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
                 <span>🏢</span> Load GeM Buyers Template
               </button>
-              <button type="button" id="btnClearTemplate" class="px-3 py-1.5 rounded-lg text-xs border border-white/20 text-white/70 hover:text-white">
+              <button type="button" id="btnClearTemplate" class="flex-1 sm:flex-initial text-center justify-center px-3 py-1.5 rounded-lg text-xs border border-white/20 text-white/70 hover:text-white cursor-pointer whitespace-nowrap">
                 Clear Blank
               </button>
             </div>

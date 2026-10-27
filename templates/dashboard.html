@@ -19,12 +19,12 @@
 {% block content %}
 
 <!-- Live Refresh Bar -->
-<div class="flex items-center justify-between mb-4 px-1">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4 px-1">
   <div class="flex items-center gap-2 text-xs text-white/30">
     <span class="pulse-dot w-1.5 h-1.5 rounded-full bg-brand-400 inline-block"></span>
     <span id="lastRefreshed">Loading stats...</span>
   </div>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2 flex-wrap">
     <button onclick="syncBouncesDashboard()" id="syncBouncesDashBtn"
       class="flex items-center gap-1.5 text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-lg transition-all"
       title="Check Gmail for Mail Delivery Subsystem bounce-backs and auto-suppress dead leads">
@@ -69,16 +69,16 @@
 {% endif %}
 
 <!-- Stats Row -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
   <!-- Sent Today -->
-  <div class="stat-card rounded-xl p-5">
+  <div class="stat-card rounded-xl p-4 sm:p-5">
     <div class="flex items-start justify-between mb-3">
       <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Sent Today</div>
       <div class="text-brand-400">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
       </div>
     </div>
-    <div id="stat-sent-today" class="text-3xl font-bold text-white mb-1">{{ sent_today }}</div>
+    <div id="stat-sent-today" class="text-2xl sm:text-3xl font-bold text-white mb-1">{{ sent_today }}</div>
     <div class="text-xs text-white/40">of <span id="stat-daily-cap">{{ daily_cap }}</span> cap</div>
     <!-- Progress bar -->
     <div class="mt-3 h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -88,28 +88,28 @@
   </div>
 
   <!-- Bounces Today -->
-  <div class="stat-card rounded-xl p-5">
+  <div class="stat-card rounded-xl p-4 sm:p-5">
     <div class="flex items-start justify-between mb-3">
       <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Bounces Today</div>
       <div class="{% if bounced_today > 4 %}text-red-400{% else %}text-white/30{% endif %}">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
     </div>
-    <div id="stat-bounced-today" class="text-3xl font-bold text-white mb-1">
+    <div id="stat-bounced-today" class="text-2xl sm:text-3xl font-bold text-white mb-1">
       {{ bounced_today }}
     </div>
     <div id="stat-bounce-label" class="text-xs text-white/40">Auto-pause at 5</div>
   </div>
 
   <!-- Queue Depth -->
-  <div class="stat-card rounded-xl p-5">
+  <div class="stat-card rounded-xl p-4 sm:p-5">
     <div class="flex items-start justify-between mb-3">
       <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Queued</div>
       <div class="text-yellow-400">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
       </div>
     </div>
-    <div id="stat-queue" class="text-3xl font-bold text-white mb-1">{{ queue_depth }}</div>
+    <div id="stat-queue" class="text-2xl sm:text-3xl font-bold text-white mb-1">{{ queue_depth }}</div>
     <div class="text-xs text-white/40">emails awaiting send</div>
     <button id="processQueueBtn" onclick="processQueueLoop()"
       class="mt-3 w-full btn-primary text-xs py-1.5 rounded-lg font-medium"
@@ -119,21 +119,21 @@
   </div>
 
   <!-- Suppressed -->
-  <div class="stat-card rounded-xl p-5">
+  <div class="stat-card rounded-xl p-4 sm:p-5">
     <div class="flex items-start justify-between mb-3">
       <div class="text-xs font-medium text-white/50 uppercase tracking-wide">Suppressed</div>
       <div class="text-white/30">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
       </div>
     </div>
-    <div id="stat-suppressed" class="text-3xl font-bold text-white mb-1">{{ suppression_count }}</div>
+    <div id="stat-suppressed" class="text-2xl sm:text-3xl font-bold text-white mb-1">{{ suppression_count }}</div>
     <div class="text-xs text-white/40">unsub / bounced</div>
   </div>
 </div>
 
 {% if low_leads_alert %}
 <!-- Low Leads Alert Banner -->
-<div class="mb-6 px-5 py-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-start gap-3 slide-in">
+<div class="mb-6 px-4 sm:px-5 py-3.5 sm:py-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-start gap-3 slide-in">
   <svg class="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
   </svg>
@@ -148,7 +148,7 @@
 {% endif %}
 
 <!-- Lead Pipeline Progress -->
-<div class="card rounded-xl p-5 mb-6">
+<div class="card rounded-xl p-4 sm:p-5 mb-6">
   <div class="flex items-center justify-between mb-4">
     <h3 class="text-sm font-semibold text-white/80">📊 Lead Pipeline Progress</h3>
     <span id="pipeline-pct" class="text-xs text-white/40">{{ progress_pct }}% complete</span>
@@ -160,25 +160,25 @@
          style="width: {{ progress_pct }}%"></div>
   </div>
 
-  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-    <div class="text-center">
-      <div id="stat-total-leads" class="text-2xl font-bold text-white">{{ total_leads|default:"0" }}</div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+    <div class="text-center p-2 rounded-lg bg-white/2">
+      <div id="stat-total-leads" class="text-xl sm:text-2xl font-bold text-white">{{ total_leads|default:"0" }}</div>
       <div class="text-xs text-white/40 mt-0.5">Total Leads</div>
     </div>
-    <div class="text-center">
-      <div id="stat-contacted" class="text-2xl font-bold text-green-400">{{ contacted_leads|default:"0" }}</div>
+    <div class="text-center p-2 rounded-lg bg-white/2">
+      <div id="stat-contacted" class="text-xl sm:text-2xl font-bold text-green-400">{{ contacted_leads|default:"0" }}</div>
       <div class="text-xs text-white/40 mt-0.5">Contacted</div>
     </div>
-    <div class="text-center">
-      <div id="stat-remaining" class="text-2xl font-bold text-brand-400">{{ new_leads|default:"0" }}</div>
+    <div class="text-center p-2 rounded-lg bg-white/2">
+      <div id="stat-remaining" class="text-xl sm:text-2xl font-bold text-brand-400">{{ new_leads|default:"0" }}</div>
       <div class="text-xs text-white/40 mt-0.5">Remaining</div>
     </div>
-    <div class="text-center">
-      <div class="text-2xl font-bold text-white/50">{{ suppressed_leads|default:"0" }}</div>
+    <div class="text-center p-2 rounded-lg bg-white/2">
+      <div class="text-xl sm:text-2xl font-bold text-white/50">{{ suppressed_leads|default:"0" }}</div>
       <div class="text-xs text-white/40 mt-0.5">Suppressed</div>
     </div>
-    <div class="text-center">
-      <div class="text-2xl font-bold {% if days_left < 10 %}text-yellow-400{% else %}text-white{% endif %}">
+    <div class="text-center p-2 rounded-lg bg-white/2 col-span-2 sm:col-span-1">
+      <div class="text-xl sm:text-2xl font-bold {% if days_left < 10 %}text-yellow-400{% else %}text-white{% endif %}">
         {{ days_left }}
       </div>
       <div class="text-xs text-white/40 mt-0.5">Days Left</div>
@@ -195,25 +195,25 @@
 </div>
 
 <!-- Row 2: Status Cards -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
   <!-- Gmail Status -->
-  <div class="card p-5 rounded-xl">
-    <h3 class="text-sm font-semibold text-white/80 mb-4">Gmail Connection</h3>
+  <div class="card p-4 sm:p-5 rounded-xl">
+    <h3 class="text-sm font-semibold text-white/80 mb-3 sm:mb-4">Gmail Connection</h3>
     {% if gmail_connected %}
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+      <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
         <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       </div>
-      <div>
+      <div class="min-w-0">
         <div class="text-sm font-medium text-green-300">Connected</div>
-        <div class="text-xs text-white/40">{{ gmail_email }}</div>
+        <div class="text-xs text-white/40 truncate">{{ gmail_email }}</div>
       </div>
     </div>
     <a href="/gmail/disconnect/" onclick="return confirm('Disconnect Gmail?')"
        class="text-xs text-red-400 hover:text-red-300 transition-colors">Disconnect →</a>
     {% else %}
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+      <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
         <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </div>
       <div>
@@ -228,15 +228,15 @@
   </div>
 
   <!-- Send Pause Toggle -->
-  <div class="card p-5 rounded-xl">
-    <h3 class="text-sm font-semibold text-white/80 mb-4">Send Switch</h3>
+  <div class="card p-4 sm:p-5 rounded-xl">
+    <h3 class="text-sm font-semibold text-white/80 mb-3 sm:mb-4">Send Switch</h3>
     <div class="flex items-center justify-between mb-3">
       <span class="text-sm {% if paused %}text-orange-400{% else %}text-green-400{% endif %} font-medium">
         {% if paused %}⏸ Paused{% else %}▶ Active{% endif %}
       </span>
       {% if user.is_staff %}
       <button id="pauseToggleBtn" onclick="togglePause()"
-        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer
           {% if paused %}bg-orange-500{% else %}bg-brand-500{% endif %}">
         <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
           {% if paused %}translate-x-1{% else %}translate-x-6{% endif %}"></span>
@@ -251,24 +251,24 @@
   </div>
 
   <!-- Quick Links -->
-  <div class="card p-5 rounded-xl">
-    <h3 class="text-sm font-semibold text-white/80 mb-4">Quick Actions</h3>
-    <div class="space-y-2">
+  <div class="card p-4 sm:p-5 rounded-xl sm:col-span-2 lg:col-span-1">
+    <h3 class="text-sm font-semibold text-white/80 mb-3 sm:mb-4">Quick Actions</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-1 gap-2">
       <a href="/leads/upload/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-        Upload Leads (CSV)
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        <span class="truncate">Upload Leads</span>
       </a>
       <a href="/compose/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        New AI Campaign
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span class="truncate">New AI Campaign</span>
       </a>
       <a href="/knowledge/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253"/></svg>
-        Update Knowledge Base
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253"/></svg>
+        <span class="truncate">Knowledge Base</span>
       </a>
       <a href="/logs/" class="flex items-center gap-2 text-xs text-white/60 hover:text-white transition-colors py-1">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-        Audit Trail
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        <span class="truncate">Audit Trail</span>
       </a>
     </div>
   </div>
@@ -276,26 +276,28 @@
 
 <!-- Recent Campaigns -->
 <div class="card rounded-xl overflow-hidden">
-  <div class="px-5 py-4 border-b border-white/8 flex items-center justify-between">
+  <div class="px-4 sm:px-5 py-3 sm:py-4 border-b border-white/8 flex items-center justify-between">
     <h3 class="text-sm font-semibold text-white/80">Recent Campaigns</h3>
     <a href="/campaigns/" class="text-xs text-brand-400 hover:text-brand-300">View all →</a>
   </div>
   {% if recent_campaigns %}
   <div class="divide-y divide-white/5">
     {% for c in recent_campaigns %}
-    <a href="/campaigns/{{ c.pk }}/" class="table-row flex items-center gap-4 px-5 py-3.5">
-      <div class="flex-1 min-w-0">
+    <a href="/campaigns/{{ c.pk }}/" class="table-row flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5">
+      <div class="flex-1 min-w-0 w-full sm:w-auto">
         <div class="text-sm font-medium text-white truncate">{{ c.name }}</div>
         <div class="text-xs text-white/40">{{ c.lane }} · {{ c.created_at|date:"M d, Y" }}</div>
       </div>
-      <span class="badge-{{ c.status }} text-xs px-2.5 py-1 rounded-full font-medium">
-        {{ c.get_status_display }}
-      </span>
-      {% if c.spam_score %}
-      <span class="text-xs {% if c.spam_score >= 7 %}text-green-400{% else %}text-red-400{% endif %} font-mono">
-        {{ c.spam_score }}/10
-      </span>
-      {% endif %}
+      <div class="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
+        <span class="badge-{{ c.status }} text-xs px-2.5 py-1 rounded-full font-medium">
+          {{ c.get_status_display }}
+        </span>
+        {% if c.spam_score %}
+        <span class="text-xs {% if c.spam_score >= 7 %}text-green-400{% else %}text-red-400{% endif %} font-mono">
+          {{ c.spam_score }}/10
+        </span>
+        {% endif %}
+      </div>
     </a>
     {% endfor %}
   </div>

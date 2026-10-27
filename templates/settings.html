@@ -29,21 +29,21 @@
 
     <form method="post" action="/settings/update-cap/" id="capForm">
       {% csrf_token %}
-      <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
         <div>
           <label class="block text-xs font-medium text-white/50 mb-1.5">Daily Email Cap</label>
           <input type="number" name="daily_cap" id="daily_cap_input" value="{{ setting.daily_cap }}" min="1" max="2000"
-            class="w-full px-3 py-2 rounded-lg text-sm border">
+            class="w-full px-3 py-2 rounded-lg text-sm border font-mono">
           <p class="text-xs text-white/30 mt-1">Max 20% increase per save</p>
         </div>
         <div>
           <label class="block text-xs font-medium text-white/50 mb-1.5">Batch Size (per cron)</label>
           <input type="number" name="batch_size" value="{{ setting.batch_size }}" min="1" max="100"
-            class="w-full px-3 py-2 rounded-lg text-sm border">
+            class="w-full px-3 py-2 rounded-lg text-sm border font-mono">
           <p class="text-xs text-white/30 mt-1">Emails per trigger (cron runs every 10 min)</p>
         </div>
       </div>
-      <button type="submit" class="btn-primary px-5 py-2 rounded-lg text-sm font-medium text-white">
+      <button type="submit" class="w-full sm:w-auto btn-primary px-5 py-2.5 rounded-lg text-sm font-medium text-white cursor-pointer text-center">
         Save Settings
       </button>
     </form>

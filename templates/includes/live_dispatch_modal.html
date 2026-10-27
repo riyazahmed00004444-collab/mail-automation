@@ -1,13 +1,13 @@
 <!-- Live Dispatch Animation Modal Component -->
-<div id="liveDispatchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
-  <div class="card rounded-2xl p-6 max-w-2xl w-full border border-brand-500/40 bg-gradient-to-b from-slate-900 via-indigo-950/90 to-black shadow-2xl shadow-brand-500/20 space-y-5 animate-in fade-in duration-200">
+<div id="liveDispatchModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md hidden">
+  <div class="card rounded-2xl p-4 sm:p-6 max-w-2xl w-full border border-brand-500/40 bg-gradient-to-b from-slate-900 via-indigo-950/90 to-black shadow-2xl shadow-brand-500/20 space-y-4 sm:space-y-5 animate-in fade-in duration-200 max-h-[92vh] overflow-y-auto">
     
     <!-- Modal Header -->
     <div class="flex items-center justify-between border-b border-white/10 pb-3">
-      <div class="flex items-center gap-2.5">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot"></span>
-        <h3 class="text-sm font-bold text-white uppercase tracking-wider">🚀 Live Delivery Dispatcher</h3>
-        <span id="liveStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+      <div class="flex items-center gap-2 sm:gap-2.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot flex-shrink-0"></span>
+        <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">🚀 Live Dispatcher</h3>
+        <span id="liveStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30 whitespace-nowrap">
           Connecting...
         </span>
       </div>
@@ -17,49 +17,49 @@
     </div>
 
     <!-- Animated Transmission Visual -->
-    <div class="p-5 rounded-xl bg-white/2 border border-white/10 relative overflow-hidden text-center space-y-3">
+    <div class="p-4 sm:p-5 rounded-xl bg-white/2 border border-white/10 relative overflow-hidden text-center space-y-3">
       <!-- Radar Pulse Waves Background -->
-      <div class="relative flex items-center justify-center py-3">
-        <div class="absolute w-28 h-28 rounded-full bg-emerald-500/10 animate-ping opacity-60"></div>
-        <div class="absolute w-20 h-20 rounded-full bg-brand-500/20 animate-pulse"></div>
+      <div class="relative flex items-center justify-center py-2 sm:py-3">
+        <div class="absolute w-24 sm:w-28 h-24 sm:h-28 rounded-full bg-emerald-500/10 animate-ping opacity-60"></div>
+        <div class="absolute w-16 sm:w-20 h-16 sm:h-20 rounded-full bg-brand-500/20 animate-pulse"></div>
         <!-- Center Floating Icon -->
-        <div class="relative w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-emerald-500 flex items-center justify-center text-2xl shadow-xl shadow-brand-500/40">
+        <div class="relative w-12 sm:w-14 h-12 sm:h-14 rounded-2xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-emerald-500 flex items-center justify-center text-xl sm:text-2xl shadow-xl shadow-brand-500/40">
           ✉️
         </div>
       </div>
 
       <div class="space-y-1">
         <p class="text-xs text-white/50" id="liveTransmissionState">Preparing transmission...</p>
-        <p class="text-sm font-mono font-bold text-emerald-300 truncate max-w-lg mx-auto" id="liveCurrentTarget">
+        <p class="text-xs sm:text-sm font-mono font-bold text-emerald-300 truncate max-w-lg mx-auto" id="liveCurrentTarget">
           Connecting to Gmail API...
         </p>
       </div>
 
       <!-- Live Progress Bar -->
-      <div class="space-y-1.5 pt-2">
+      <div class="space-y-1.5 pt-1 sm:pt-2">
         <div class="flex items-center justify-between text-xs text-white/60 font-mono">
           <span id="liveBatchProgressText">Progress: 0 / 20</span>
           <span id="liveProgressPercent" class="font-bold text-brand-300">0%</span>
         </div>
-        <div class="w-full bg-white/10 rounded-full h-2.5 overflow-hidden p-0.5">
-          <div id="liveProgressBar" class="h-2 rounded-full bg-gradient-to-r from-brand-500 via-indigo-500 to-emerald-400 transition-all duration-300" style="width: 0%;"></div>
+        <div class="w-full bg-white/10 rounded-full h-2 sm:h-2.5 overflow-hidden p-0.5">
+          <div id="liveProgressBar" class="h-full rounded-full bg-gradient-to-r from-brand-500 via-indigo-500 to-emerald-400 transition-all duration-300" style="width: 0%;"></div>
         </div>
       </div>
     </div>
 
     <!-- Live Counters -->
-    <div class="grid grid-cols-3 gap-3 text-center">
-      <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
-        <div class="text-[10px] text-white/40 uppercase">Sent This Batch</div>
-        <div class="text-base font-black text-white font-mono" id="liveSentCount">0</div>
+    <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+      <div class="p-2 sm:p-2.5 rounded-lg bg-black/40 border border-white/10">
+        <div class="text-[9px] sm:text-[10px] text-white/40 uppercase">This Batch</div>
+        <div class="text-sm sm:text-base font-black text-white font-mono" id="liveSentCount">0</div>
       </div>
-      <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
-        <div class="text-[10px] text-white/40 uppercase">Sent Today (IST)</div>
-        <div class="text-base font-black text-emerald-400 font-mono" id="liveSentTodayCount">{{ sent_today|default:"0" }}</div>
+      <div class="p-2 sm:p-2.5 rounded-lg bg-black/40 border border-white/10">
+        <div class="text-[9px] sm:text-[10px] text-white/40 uppercase">Sent Today</div>
+        <div class="text-sm sm:text-base font-black text-emerald-400 font-mono" id="liveSentTodayCount">{{ sent_today|default:"0" }}</div>
       </div>
-      <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
-        <div class="text-[10px] text-white/40 uppercase">Pacing Mode</div>
-        <div class="text-xs font-bold text-brand-300 font-mono mt-1" id="livePacingBadge">Active (1.2s Pacing)</div>
+      <div class="p-2 sm:p-2.5 rounded-lg bg-black/40 border border-white/10">
+        <div class="text-[9px] sm:text-[10px] text-white/40 uppercase">Pacing</div>
+        <div class="text-[10px] sm:text-xs font-bold text-brand-300 font-mono mt-0.5 sm:mt-1 truncate" id="livePacingBadge">Active (1.2s)</div>
       </div>
     </div>
 
@@ -69,17 +69,17 @@
         <span>Live Dispatch Console Feed:</span>
         <button type="button" onclick="clearLiveConsole()" class="hover:text-white text-[10px] cursor-pointer">Clear</button>
       </div>
-      <div id="liveConsoleOutput" class="h-36 overflow-y-auto p-3 rounded-xl bg-black/80 border border-white/10 font-mono text-xs space-y-1 select-all shadow-inner leading-relaxed">
-        <div class="text-white/40 text-[11px]">// Live engine ready. Press start or wait for dispatch stream...</div>
+      <div id="liveConsoleOutput" class="h-28 sm:h-36 overflow-y-auto p-2.5 sm:p-3 rounded-xl bg-black/80 border border-white/10 font-mono text-[11px] sm:text-xs space-y-1 select-all shadow-inner leading-relaxed">
+        <div class="text-white/40 text-[10px] sm:text-[11px]">// Live engine ready. Press start or wait for dispatch stream...</div>
       </div>
     </div>
 
     <!-- Modal Footer Actions -->
-    <div class="flex items-center justify-between pt-2 border-t border-white/10">
-      <a href="/campaigns/tracking/" id="btnViewTracking" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white flex items-center gap-1.5 shadow transition-colors">
-        📊 View in Tracking Page →
+    <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+      <a href="/campaigns/tracking/" id="btnViewTracking" class="text-center px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center gap-1.5 shadow transition-colors">
+        📊 View Tracking →
       </a>
-      <button type="button" onclick="closeLiveDispatchModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer">
+      <button type="button" onclick="closeLiveDispatchModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer text-center">
         Close
       </button>
     </div>

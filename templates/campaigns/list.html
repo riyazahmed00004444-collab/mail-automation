@@ -20,9 +20,9 @@
   {% if campaigns %}
   <div class="divide-y divide-white/5">
     {% for c in campaigns %}
-    <a href="/campaigns/{{ c.pk }}/" class="table-row flex items-center gap-4 px-5 py-4">
-      <div class="flex-1 min-w-0">
-        <div class="text-sm font-medium text-white">{{ c.name }}</div>
+    <a href="/campaigns/{{ c.pk }}/" class="table-row flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-5 py-3.5 sm:py-4">
+      <div class="flex-1 min-w-0 w-full sm:w-auto">
+        <div class="text-sm font-medium text-white truncate">{{ c.name }}</div>
         <div class="text-xs text-white/40 mt-0.5">
           {{ c.get_lane_display }} · {{ c.created_by.username|default:"—" }} · {{ c.created_at|date:"M d, Y H:i" }}
         </div>
@@ -30,14 +30,14 @@
         <div class="text-xs text-brand-400 mt-0.5">Event: {{ c.audience_event }}</div>
         {% endif %}
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
         {% if c.spam_score %}
         <span class="text-xs font-mono {% if c.spam_score >= 7 %}text-green-400{% else %}text-red-400{% endif %}">{{ c.spam_score }}/10</span>
         {% endif %}
         <span class="badge-{{ c.status }} text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap">
           {{ c.get_status_display }}
         </span>
-        <svg class="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <svg class="w-4 h-4 text-white/20 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </div>
     </a>
     {% endfor %}

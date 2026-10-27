@@ -80,19 +80,27 @@
 <body class="gradient-bg min-h-screen text-white">
 
 {% if user.is_authenticated %}
-<div class="flex min-h-screen">
-  <aside class="w-64 flex-shrink-0 glass border-r border-white/10 flex flex-col" style="min-height:100vh;">
-    <div class="p-6 border-b border-white/10">
+<!-- Mobile Backdrop Overlay -->
+<div id="mobileBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity duration-300" onclick="toggleMobileSidebar()"></div>
+
+<div class="flex min-h-screen relative overflow-x-hidden">
+  <!-- Responsive Sidebar / Mobile Drawer -->
+  <aside id="mainSidebar" class="fixed inset-y-0 left-0 z-50 w-64 glass border-r border-white/10 flex flex-col transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 lg:static lg:z-auto flex-shrink-0" style="min-height:100vh;">
+    <div class="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg btn-primary flex items-center justify-center text-lg font-bold">B</div>
+        <div class="w-9 h-9 rounded-lg btn-primary flex items-center justify-center text-lg font-bold shadow-md">B</div>
         <div>
           <div class="font-bold text-white text-sm">BidAlert</div>
           <div class="text-xs text-white/40">Comms Hub</div>
         </div>
       </div>
+      <!-- Mobile Close Button -->
+      <button type="button" onclick="toggleMobileSidebar()" class="lg:hidden text-white/50 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors" aria-label="Close menu">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
-    <nav class="flex-1 p-4 space-y-1">
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
       <a href="/" class="nav-link {% if request.path == "/" %}active{% endif %} flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
         Dashboard
@@ -139,7 +147,7 @@
 
     <div class="p-4 border-t border-white/10">
       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold">
+        <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold shadow">
           {{ user.username|first|upper }}
         </div>
         <div class="flex-1 min-w-0">
@@ -151,21 +159,32 @@
         {% csrf_token %}
         <button type="submit" class="text-xs text-white/40 hover:text-white/70 transition-colors bg-transparent border-0 p-0 cursor-pointer">Sign out</button>
       </form>
-
     </div>
   </aside>
 
-  <main class="flex-1 overflow-auto">
-    <div class="sticky top-0 z-10 glass border-b border-white/10 px-6 py-3 flex items-center justify-between">
-      <h1 class="text-sm font-semibold text-white/90">{% block page_title %}Dashboard{% endblock %}</h1>
-      <div class="flex items-center gap-4">
+  <!-- Main Viewport Area -->
+  <main class="flex-1 min-w-0 overflow-auto flex flex-col">
+    <!-- Topbar Header -->
+    <div class="sticky top-0 z-30 glass border-b border-white/10 px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+        <!-- Mobile Drawer Toggle Button -->
+        <button type="button" onclick="toggleMobileSidebar()" class="lg:hidden p-1.5 -ml-1 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors flex-shrink-0" aria-label="Open sidebar menu">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="lg:hidden w-7 h-7 rounded-md btn-primary flex items-center justify-center text-xs font-bold flex-shrink-0 shadow">B</div>
+        <h1 class="text-xs sm:text-sm font-semibold text-white/90 truncate">{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
+      
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
         {% block topbar_actions %}{% endblock %}
-        <a href="/compose/" class="btn-primary text-xs font-medium px-4 py-2 rounded-lg text-white">+ New Campaign</a>
+        <a href="/compose/" class="btn-primary text-xs font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white whitespace-nowrap shadow-sm flex items-center gap-1">
+          <span>+</span> <span class="hidden sm:inline">New</span> Campaign
+        </a>
       </div>
     </div>
 
     {% if messages %}
-    <div class="px-6 pt-4">
+    <div class="px-4 sm:px-6 pt-4">
       {% for message in messages %}
       <div class="slide-in mb-2 px-4 py-3 rounded-lg text-sm flex items-center gap-2
         {% if message.tags == "error" %}bg-red-500/10 border border-red-500/30 text-red-300
@@ -178,9 +197,27 @@
     </div>
     {% endif %}
 
-    <div class="p-6">{% block content %}{% endblock %}</div>
+    <div class="p-3.5 sm:p-5 lg:p-6 flex-1 min-w-0">{% block content %}{% endblock %}</div>
   </main>
 </div>
+
+<script>
+  function toggleMobileSidebar() {
+    const sidebar = document.getElementById('mainSidebar');
+    const backdrop = document.getElementById('mobileBackdrop');
+    if (!sidebar || !backdrop) return;
+    const isClosed = sidebar.classList.contains('-translate-x-full');
+    if (isClosed) {
+      sidebar.classList.remove('-translate-x-full');
+      backdrop.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden', 'lg:overflow-auto');
+    } else {
+      sidebar.classList.add('-translate-x-full');
+      backdrop.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
+    }
+  }
+</script>
 
 {% else %}
 <div class="min-h-screen flex items-center justify-center">

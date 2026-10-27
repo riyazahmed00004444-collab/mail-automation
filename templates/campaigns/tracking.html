@@ -4,35 +4,36 @@
 
 {% block topbar_actions %}
 <button type="button" onclick="startLiveDispatch('', 'Active Campaign Queue', 20)"
-        class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer transition-all">
+        class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 sm:gap-2 cursor-pointer transition-all whitespace-nowrap">
   <span class="w-2 h-2 rounded-full bg-white pulse-dot"></span>
-  🚀 Live Dispatch (Watch Sending)
+  <span class="hidden sm:inline">🚀 Live Dispatch (Watch Sending)</span>
+  <span class="sm:hidden">🚀 Dispatch</span>
 </button>
 {% endblock %}
 
 {% block content %}
 
 <!-- Pipeline Overview -->
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-  <div class="stat-card rounded-xl p-5 text-center">
-    <div class="text-2xl font-bold text-white">{{ total_leads|default:"0" }}</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+  <div class="stat-card rounded-xl p-3.5 sm:p-5 text-center">
+    <div class="text-xl sm:text-2xl font-bold text-white">{{ total_leads|default:"0" }}</div>
     <div class="text-xs text-white/40 mt-1">Total Leads</div>
   </div>
-  <div class="stat-card rounded-xl p-5 text-center">
-    <div class="text-2xl font-bold text-green-400">{{ contacted|default:"0" }}</div>
+  <div class="stat-card rounded-xl p-3.5 sm:p-5 text-center">
+    <div class="text-xl sm:text-2xl font-bold text-green-400">{{ contacted|default:"0" }}</div>
     <div class="text-xs text-white/40 mt-1">Contacted</div>
   </div>
-  <div class="stat-card rounded-xl p-5 text-center">
-    <div class="text-2xl font-bold text-brand-400">{{ new_leads|default:"0" }}</div>
+  <div class="stat-card rounded-xl p-3.5 sm:p-5 text-center">
+    <div class="text-xl sm:text-2xl font-bold text-brand-400">{{ new_leads|default:"0" }}</div>
     <div class="text-xs text-white/40 mt-1">Remaining Clean</div>
     <div class="text-[10px] text-white/40">🎯 {{ targeted_new }} · ⚡ {{ direct_new }}</div>
   </div>
-  <div class="stat-card rounded-xl p-5 text-center">
-    <div class="text-2xl font-bold text-white/50">{{ suppressed_leads|default:"0" }}</div>
+  <div class="stat-card rounded-xl p-3.5 sm:p-5 text-center">
+    <div class="text-xl sm:text-2xl font-bold text-white/50">{{ suppressed_leads|default:"0" }}</div>
     <div class="text-xs text-white/40 mt-1">Suppressed</div>
   </div>
-  <div class="stat-card rounded-xl p-5 text-center">
-    <div class="text-2xl font-bold {% if days_left < 10 %}text-yellow-400{% else %}text-white{% endif %}">
+  <div class="stat-card rounded-xl p-3.5 sm:p-5 text-center col-span-2 sm:col-span-1">
+    <div class="text-xl sm:text-2xl font-bold {% if days_left < 10 %}text-yellow-400{% else %}text-white{% endif %}">
       {{ days_left }}
     </div>
     <div class="text-xs text-white/40 mt-1">Days Left</div>

@@ -5,16 +5,18 @@
 {% block page_title %}Delivery Scheduler{% endblock %}
 
 {% block topbar_actions %}
-<div class="flex items-center gap-2">
-  <button type="button" onclick="startLiveDispatch('', 'General Queue', 20)" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer">
+<div class="flex items-center gap-2 flex-wrap justify-end">
+  <button type="button" onclick="startLiveDispatch('', 'General Queue', 20)" class="px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer whitespace-nowrap">
     <span class="w-2 h-2 rounded-full bg-white pulse-dot"></span>
-    🚀 Live Dispatch (Watch Sending)
+    <span class="hidden sm:inline">🚀 Live Dispatch (Watch Sending)</span>
+    <span class="sm:hidden">🚀 Dispatch</span>
   </button>
   <form method="post" action="{% url 'scheduler_process_now' %}">
     {% csrf_token %}
-    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-1.5 border border-white/10">
+    <button type="submit" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-1.5 border border-white/10 whitespace-nowrap">
       <svg class="w-3.5 h-3.5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-      Process Queue
+      <span class="hidden sm:inline">Process Queue</span>
+      <span class="sm:hidden">Process</span>
     </button>
   </form>
 </div>
@@ -24,10 +26,10 @@
 <div class="max-w-7xl mx-auto space-y-6">
 
   <!-- Top Hero / Master Control Banner -->
-  <div class="card rounded-2xl p-6 bg-gradient-to-r from-brand-900/40 via-indigo-900/30 to-purple-900/20 border border-brand-500/30 flex items-center justify-between flex-wrap gap-4">
+  <div class="card rounded-2xl p-4 sm:p-6 bg-gradient-to-r from-brand-900/40 via-indigo-900/30 to-purple-900/20 border border-brand-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div class="space-y-1">
-      <div class="flex items-center gap-2.5">
-        <h2 class="text-lg font-bold text-white">Scheduler & Delivery Engine</h2>
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <h2 class="text-base sm:text-lg font-bold text-white">Scheduler &amp; Delivery Engine</h2>
         {% if setting.paused %}
         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -45,17 +47,17 @@
       </p>
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 w-full sm:w-auto">
       <!-- Master Pause/Resume Toggle -->
-      <form method="post" action="{% url 'toggle_scheduler_pause' %}">
+      <form method="post" action="{% url 'toggle_scheduler_pause' %}" class="w-full sm:w-auto">
         {% csrf_token %}
         {% if setting.paused %}
-        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all">
+        <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Resume Delivery Engine
         </button>
         {% else %}
-        <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600/80 hover:bg-amber-600 text-white flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all">
+        <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-amber-600/80 hover:bg-amber-600 text-white flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           Pause Delivery Engine
         </button>
@@ -223,12 +225,12 @@
                 <button type="button" onclick="setWeekdays([0,1,2,3,4,5,6])" class="text-white/50 hover:text-white px-1">All</button>
               </div>
             </div>
-            <div class="grid grid-cols-7 gap-1.5 pt-1">
+            <div class="grid grid-cols-4 sm:grid-cols-7 gap-1.5 pt-1">
               {% for day in days_data %}
-              <label class="flex flex-col items-center justify-center p-2 rounded-lg border border-white/10 hover:border-brand-500/50 cursor-pointer bg-white/5 text-center transition-colors">
+              <label class="flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg border border-white/10 hover:border-brand-500/50 cursor-pointer bg-white/5 text-center transition-colors">
                 <input type="checkbox" name="weekdays" value="{{ day.id }}" {% if day.checked %}checked{% endif %}
                   class="day-checkbox rounded text-brand-500 mb-1">
-                <span class="text-[10px] font-bold text-white/80">{{ day.name }}</span>
+                <span class="text-[9px] sm:text-[10px] font-bold text-white/80">{{ day.name }}</span>
               </label>
               {% endfor %}
             </div>
@@ -318,18 +320,18 @@
 
     <!-- RIGHT: Live Scheduled Queue & Actions (7 cols) -->
     <div class="lg:col-span-7 space-y-5">
-      <div class="card rounded-xl p-5 space-y-4 border border-white/10">
-        <div class="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
+      <div class="card rounded-xl p-4 sm:p-5 space-y-4 border border-white/10">
+        <div class="flex items-start sm:items-center justify-between border-b border-white/10 pb-3 flex-col sm:flex-row gap-3">
           <div>
             <h3 class="text-sm font-semibold text-white/90">📋 Active &amp; Scheduled Campaign Queue</h3>
             <p class="text-[11px] text-white/50">Campaigns waiting for their start time or actively dispatching.</p>
           </div>
-          <div class="flex items-center gap-2">
-            <a href="/compose/" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-1.5 border border-white/10">
-              <span>✨</span> Schedule in AI Compose
+          <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+            <a href="/compose/" class="flex-1 sm:flex-initial justify-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-1.5 border border-white/10 whitespace-nowrap">
+              <span>✨</span> AI Compose
             </a>
-            <a href="/compose/direct/" class="btn-primary text-xs px-3 py-1.5 rounded-lg text-white font-medium flex items-center gap-1.5 shadow-sm">
-              <span>+</span> Schedule in Direct Compose
+            <a href="/compose/direct/" class="flex-1 sm:flex-initial justify-center btn-primary text-xs px-3 py-1.5 rounded-lg text-white font-medium flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+              <span>+</span> Direct Compose
             </a>
           </div>
         </div>
@@ -360,7 +362,7 @@
               </div>
 
               <!-- Scheduled Time Badge -->
-              <div class="text-right">
+              <div class="text-left sm:text-right">
                 <span class="text-[11px] text-white/40 block">Scheduled Start:</span>
                 {% if camp.start_at_local %}
                 <span class="text-xs font-mono font-bold {% if camp.is_due %}text-emerald-400{% else %}text-brand-300{% endif %}">
@@ -415,7 +417,7 @@
                 <summary class="cursor-pointer text-[11px] text-brand-300 hover:text-brand-200 list-none flex items-center gap-1 font-medium">
                   📅 Reschedule Time ▾
                 </summary>
-                <div class="absolute right-0 bottom-full mb-2 w-72 p-3 rounded-xl bg-slate-900 border border-white/20 shadow-2xl z-20 space-y-2">
+                <div class="absolute right-0 bottom-full mb-2 w-72 max-w-[calc(100vw-3rem)] p-3 rounded-xl bg-slate-900 border border-white/20 shadow-2xl z-20 space-y-2">
                   <p class="text-[11px] font-bold text-white">Pick New Date &amp; Time (IST):</p>
                   <form method="post" action="{% url 'reschedule_campaign' pk=camp.pk %}">
                     {% csrf_token %}
