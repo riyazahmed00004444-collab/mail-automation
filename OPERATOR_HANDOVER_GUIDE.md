@@ -127,8 +127,10 @@ Starting a campaign is now **1 single click** — no confusing scheduling forms 
 
 ### Dispatch Options:
 
-#### Option A: Automated Scheduled Dispatch (Hands-free)
-* Once approved, the campaign sits in the active queue. During 10:00 AM – 5:00 PM IST, the background engine sends emails smoothly up to your daily cap.
+#### Option A: Automated Scheduled Dispatch (100% Hands-free via GitHub Actions)
+* A dedicated **GitHub Actions cron runner** (`.github/workflows/scheduled_sender.yml`) runs automatically every 30 minutes between **10:00 AM and 5:00 PM IST** (Monday through Saturday).
+* It securely triggers Render's `/api/process-queue` endpoint, wakes the server if asleep, and dispatches queued batches automatically up to your daily cap.
+* **Zero operator manual work required!** You can also trigger it manually at any time under the GitHub repository's **Actions** tab by clicking **"Run workflow"**.
 
 #### Option B: "🚀 Live Dispatch" (Send Now & Watch Live)
 * Want to send a batch immediately without waiting for the next cron cycle?
