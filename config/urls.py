@@ -1,8 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views
+from django.http import JsonResponse
+
+def health_check(request):
+    return JsonResponse({'status': 'ok', 'service': 'bidalert-comms'})
 
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('gmail/', include('accounts.gmail_urls')),
