@@ -126,9 +126,10 @@ def scheduler_dashboard(request):
     )
     for dc in draft_campaigns:
         cat = dc.target_category or 'buyers'
-        dc.eligible_lead_count = Lead.objects.filter(category=cat, status=Lead.STATUS_NEW, is_suppressed=False).count()
-        if dc.eligible_lead_count == 0:
-            dc.eligible_lead_count = Lead.objects.filter(status=Lead.STATUS_NEW, is_suppressed=False).count()
+        if cat and cat != Campaign.CAT_ALL:
+            dc.eligible_lead_count = Lead.objects.filter(category=cat, status=Lead.STATUS_NEW).count()
+        else:
+            dc.eligible_lead_count = Lead.objects.filter(status=Lead.STATUS_NEW).count()
 
     context = {
         'setting': setting,
