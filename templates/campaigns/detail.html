@@ -24,22 +24,28 @@
         📧 Send Test Email
       </button>
 
-      {% if user.is_staff %}
-        {% if campaign.status in "approved,sending" %}
+      {% if user.is_staff or user.is_authenticated %}
+        {% if campaign.status in "draft,pending_approval" %}
+        <form method="post" action="/campaigns/{{ campaign.pk }}/approve/" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="btn-primary text-xs px-4 py-2 rounded-lg text-white font-bold flex items-center gap-1.5 shadow-lg shadow-brand-500/30 cursor-pointer">
+            <span>⚡</span> 1-Click Approve &amp; Queue (Start Delivery)
+          </button>
+        </form>
+        {% elif campaign.status in "scheduled,sending" %}
+        <button type="button" onclick="startLiveDispatch('{{ campaign.pk }}', '{{ campaign.name|escapejs }}', 20)"
+          class="px-3.5 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer">
+          <span class="w-2 h-2 rounded-full bg-white pulse-dot"></span>
+          🚀 Send Now (Live Dispatch)
+        </button>
         <form method="post" action="/campaigns/{{ campaign.pk }}/pause/" class="inline">
           {% csrf_token %}
-          <button class="text-xs px-4 py-2 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-300 hover:bg-orange-500/30 transition-colors">Pause</button>
+          <button class="text-xs px-4 py-2 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-300 hover:bg-orange-500/30 transition-colors cursor-pointer">Pause Delivery</button>
         </form>
         {% elif campaign.status == "paused" %}
         <form method="post" action="/campaigns/{{ campaign.pk }}/pause/" class="inline">
           {% csrf_token %}
-          <button class="text-xs px-4 py-2 rounded-lg bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30 transition-colors">Resume</button>
-        </form>
-        {% endif %}
-        {% if campaign.can_approve %}
-        <form method="post" action="/campaigns/{{ campaign.pk }}/approve/" class="inline">
-          {% csrf_token %}
-          <button class="btn-primary text-xs px-4 py-2 rounded-lg text-white font-semibold">✓ Approve & Queue</button>
+          <button class="text-xs px-4 py-2 rounded-lg bg-green-500/20 border border-green-500/30 text-green-300 hover:bg-green-500/30 transition-colors cursor-pointer">▶ Resume Delivery</button>
         </form>
         {% endif %}
       {% endif %}
@@ -247,4 +253,6 @@ document.getElementById('testEmailModal').addEventListener('click', function(e) 
   if (e.target === this) closeTestModal();
 });
 </script>
+
+{% include "includes/live_dispatch_modal.html" %}
 {% endblock %}

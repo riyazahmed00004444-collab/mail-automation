@@ -320,6 +320,45 @@
 
     <!-- RIGHT: Live Scheduled Queue & Actions (7 cols) -->
     <div class="lg:col-span-7 space-y-5">
+
+      <!-- Draft Campaigns Ready for 1-Click Approval -->
+      {% if draft_campaigns %}
+      <div class="card rounded-xl p-4 sm:p-5 space-y-3 border border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/30">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>⚡ Ready Drafts (1-Click Launch)</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">{{ draft_campaigns|length }} Waiting</span>
+            </h3>
+            <p class="text-xs text-white/60 mt-0.5">Click below to immediately queue target leads and start sending during your scheduled window.</p>
+          </div>
+        </div>
+
+        <div class="space-y-2.5 pt-1">
+          {% for dc in draft_campaigns %}
+          <div class="p-3.5 rounded-xl border border-white/10 bg-white/5 hover:border-emerald-500/40 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <a href="{% url 'campaign_detail' pk=dc.pk %}" class="text-xs sm:text-sm font-bold text-white hover:text-emerald-300 transition-colors truncate block">
+                {{ dc.name }}
+              </a>
+              <div class="text-[11px] text-white/50 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span>Target: <strong class="text-brand-300">{{ dc.get_target_category_display }}</strong></span>
+                <span>·</span>
+                <span class="text-emerald-400 font-semibold">{{ dc.eligible_lead_count }} uncontacted leads ready</span>
+              </div>
+            </div>
+            <form method="post" action="{% url 'campaign_approve' pk=dc.pk %}?next=/scheduler/" class="w-full sm:w-auto">
+              {% csrf_token %}
+              <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer whitespace-nowrap">
+                <span>⚡</span> 1-Click Approve &amp; Start Sending
+              </button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       <div class="card rounded-xl p-4 sm:p-5 space-y-4 border border-white/10">
         <div class="flex items-start sm:items-center justify-between border-b border-white/10 pb-3 flex-col sm:flex-row gap-3">
           <div>

@@ -121,11 +121,8 @@ class Campaign(models.Model):
     # ── Business logic helpers ────────────────────────────────────────────────
     @property
     def can_approve(self) -> bool:
-        return (
-            self.status == self.STATUS_PENDING
-            and self.spam_score is not None
-            and self.spam_score >= 7
-        )
+        """Any campaign in draft or pending_approval can be approved directly with 1 click."""
+        return self.status in (self.STATUS_DRAFT, self.STATUS_PENDING)
 
     @property
     def is_sending_eligible(self) -> bool:

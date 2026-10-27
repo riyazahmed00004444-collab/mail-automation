@@ -118,6 +118,18 @@ def scheduler_dashboard(request):
     targeted_new = Lead.objects.filter(channel=Lead.CHANNEL_TARGETED, status=Lead.STATUS_NEW).count()
     direct_new = Lead.objects.filter(channel=Lead.CHANNEL_DIRECT, status=Lead.STATUS_NEW).count()
 
+    # Draft campaigns awaiting approval / 1-click launch
+    draft_campaigns = list(
+        Campaign.objects.filter(
+            status__in=[Campaign.STATUS_DRAFT, Campaign.STATUS_PENDING]
+        ).order_by('-created_at')
+    )
+    for dc in draft_campaigns:
+        cat = dc.target_category or 'buyers'
+        dc.eligible_lead_count = Lead.objects.filter(category=cat, status=Lead.STATUS_NEW, is_suppressed=False).count()
+        if dc.eligible_lead_count == 0:
+            dc.eligible_lead_count = Lead.objects.filter(status=Lead.STATUS_NEW, is_suppressed=False).count()
+
     context = {
         'setting': setting,
         'window_ok': window_ok,
@@ -129,6 +141,7 @@ def scheduler_dashboard(request):
         'remaining_today': remaining_today,
         'total_queued': total_queued,
         'scheduled_campaigns': scheduled_campaigns,
+        'draft_campaigns': draft_campaigns,
         'is_worker_alive': is_worker_alive,
         'heartbeat_ago_str': heartbeat_ago_str,
         'gmail_cred': gmail_cred,

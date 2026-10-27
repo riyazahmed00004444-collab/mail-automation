@@ -101,25 +101,40 @@ When drafting in the composer, click **"Enhance with Gemini AI"** to generate hi
 
 ---
 
-## 5. Step 3: Scheduling & Dispatching
+## 5. Step 3: Starting Sending (1-Click Approve & Queue)
+
+Starting a campaign is now **1 single click** — no confusing scheduling forms or manual queuing steps required:
+
+### ⚡ 1-Click Approval & Launch:
+1. Open **[Campaigns](https://bidalert-comms.onrender.com/campaigns/)** or **[Scheduler](https://bidalert-comms.onrender.com/scheduler/)**.
+2. Next to your draft campaign (e.g., **GeM & Non-GeM Procurement Support - Buyers Batch**), click:
+   👉 **`⚡ 1-Click Approve & Queue`** (or **`⚡ 1-Click Approve & Start Sending`**).
+3. **That's it!** The system automatically:
+   * Sets campaign status to **`Scheduled`**
+   * Automatically pulls all target uncontacted leads (e.g. 27,385 clean buyers)
+   * Populates them directly into the queue (`SendLog.status = 'queued'`)
+   * Begins sending during the scheduled delivery window (10:00 AM – 5:00 PM IST)
+
+---
 
 ### Sending Rules (Engine Constraints):
-* **Operating Hours:** **10:00 AM to 5:00 PM IST** (Sending is paused outside this window).
+* **Operating Hours:** **10:00 AM to 5:00 PM IST** (Sending pauses outside this window to protect open rates).
 * **Active Days:** **Monday through Saturday** (Sundays resting).
 * **Anti-Spam Jitter Delay:** An organic random delay of **20 to 60 seconds** is injected between every dispatched email to protect domain reputation.
-* **Frequency Cap:** The engine enforces a minimum **7-day cooldown** so the exact same lead is never emailed twice in one week.
+* **Frequency Cap:** Enforces a minimum **7-day cooldown** so the same lead is never emailed twice in one week.
 
-### Dispatch Modes:
+---
 
-#### Mode A: Automated Hourly Dispatch (Hands-free)
-* When a campaign is set to status **`Scheduled`** with a start time in the past or present, the background runner processes the queue automatically every hour during the send window until the daily cap is met.
+### Dispatch Options:
 
-#### Mode B: "Live Dispatch" Console (Interactive / Real-time)
-* Need to send immediately or watch live progress?
-* Open **Scheduler** or **Campaign Tracking**.
-* Click the blue **"🚀 Live Dispatch (Watch Sending)"** button.
-* Select batch size (e.g., 20 emails).
-* Watch the live console stream real-time delivery logs, Gmail message IDs, and progress bars directly on screen!
+#### Option A: Automated Scheduled Dispatch (Hands-free)
+* Once approved, the campaign sits in the active queue. During 10:00 AM – 5:00 PM IST, the background engine sends emails smoothly up to your daily cap.
+
+#### Option B: "🚀 Live Dispatch" (Send Now & Watch Live)
+* Want to send a batch immediately without waiting for the next cron cycle?
+* Click **"🚀 Live Dispatch (Watch Sending)"** (or **"Send Now (Live)"** on any campaign).
+* Enter how many emails you want to send (e.g. 20).
+* Watch the live terminal send emails in real-time with Google Message IDs and live progress bars!
 
 ---
 
