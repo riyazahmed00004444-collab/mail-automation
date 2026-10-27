@@ -1,0 +1,44 @@
+name: Automated Email Delivery Cron
+
+on:
+  # Runs every 30 minutes between 04:00 UTC and 11:30 UTC, Monday through Saturday
+  # Corresponds to 09:30 AM to 05:00 PM IST (Active Business Sending Window)
+  schedule:
+    - cron: '0,30 4-11 * * 1-6'
+
+  # Allows manual 1-click trigger from GitHub Actions tab anytime
+  workflow_dispatch:
+
+jobs:
+  dispatch_scheduled_emails:
+    name: Trigger Delivery Engine
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Send Trigger to Render Delivery Engine
+        env:
+          RENDER_URL: https://bidalert-comms.onrender.com/api/process-queue
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "========================================================"
+          echo "🚀 BidAlert Automated Delivery Cron Trigger"
+          echo "⏰ UTC Time: $(date -u)"
+          echo "🇮🇳 IST Time: $(TZ='Asia/Kolkata' date)"
+          echo "========================================================"
+
+          # Use repo secret if provided, or fallback to configured Render secret
+          SECRET="${CRON_SECRET:-bfed7f1bd782de01ab0d99af397694650f70ae70a66f23e3df3da55177678193}"
+
+          # Call the process-queue endpoint with retry to handle Render free tier cold-start wakeups
+          RESPONSE=$(curl -s -S -X POST "$RENDER_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Cron-Secret: $SECRET" \
+            --max-time 180 \
+            --retry 3 \
+            --retry-delay 15 \
+            --retry-connrefused)
+
+          echo "Server Response:"
+          echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
+          echo "========================================================"
